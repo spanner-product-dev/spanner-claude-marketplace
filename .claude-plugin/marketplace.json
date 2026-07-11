@@ -1,0 +1,16 @@
+{
+  "name": "spanner",
+  "owner": {
+    "name": "Spanner Product Development",
+    "email": "mason_curry@spannerpd.com"
+  },
+  "plugins": [
+    {
+      "name": "spanner-security",
+      "source": "./plugins/spanner-security",
+      "description": "Spanner PD's secure-by-default engineering standard — GitHub, Supabase, and Cloudflare rules plus the three-layer compliance framework. Applies automatically when building or reviewing anything touching code, data, auth, or deployment.",
+      "version": "1.0.0",
+      "category": "security"
+    }
+  ]
+}

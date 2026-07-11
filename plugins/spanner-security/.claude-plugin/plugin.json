@@ -1,0 +1,11 @@
+{
+  "name": "spanner-security",
+  "version": "1.0.0",
+  "description": "Spanner PD's secure-by-default engineering standard as an always-on skill: GitHub, Supabase, and Cloudflare rules plus the three-layer compliance framework (privacy, enterprise trust, regulated data).",
+  "author": {
+    "name": "Spanner Product Development",
+    "email": "mason_curry@spannerpd.com"
+  },
+  "homepage": "https://github.com/spanner-product-dev",
+  "keywords": ["security", "spanner", "supabase", "rls", "compliance", "secure-by-default"]
+}
