@@ -1,7 +1,7 @@
 ---
 name: spanner-security-standard
 description: >
-  Spanner PD's secure-by-default engineering standard — GitHub, Supabase, and Cloudflare rules plus the three-layer compliance framework (privacy, enterprise trust, regulated data). Apply this skill automatically, without being asked, whenever building or reviewing anything touching code, data, auth, or deployment: starting a repo or project, writing a Supabase migration or query, adding authentication, writing an API route or server action, setting up RLS, handling secrets or env vars, configuring Cloudflare, or adding a table/column holding user, tenant, financial, health, or personal data. Also triggers on "is this secure", "security review", "new project setup", "add RLS", "secure by default", "handle secrets", or any request in the spanner-product-dev GitHub org, SpannerOS, or a Spanner client project. When in doubt, apply it — retrofitting security is far more expensive than baking it in, and one leaked key or missing RLS policy can expose every tenant.
+  Spanner PD's secure-by-default engineering standard — GitHub, Supabase, and Cloudflare rules plus the three-layer compliance framework (privacy, enterprise trust, regulated data). Apply this skill automatically, without being asked, whenever building OR pushing anything that could carry risk: starting a repo or project, writing a Supabase migration or query, adding authentication, writing an API route or server action, setting up RLS, handling secrets or env vars, configuring Cloudflare, committing or pushing code, or adding a table/column holding user, tenant, financial, health, or personal data. Also triggers on "is this secure", "add RLS", "secure by default", "handle secrets", "safe to commit", "safe to push", or any request in the spanner-product-dev GitHub org, SpannerOS, or a Spanner client project. When in doubt, apply it — retrofitting security is far more expensive than baking it in, and one leaked key or missing RLS policy can expose every tenant.
 ---
 
 # Spanner PD — Security Standard
@@ -25,9 +25,24 @@ Get these right and most breaches never happen. The rest of the standard support
 
 ## How to apply this skill
 
-When you're **building**, run the New-Project Checklist (below) before writing feature code, and hold every migration, API route, and deploy config to the five rules above. When you're **reviewing**, read the code against the checklist and the full standard and flag anything that deviates — an unguarded table, a `service_role` key that could reach the client, a secret in the repo, a missing privacy-layer control.
+Apply it continuously, not only when asked. When you're **building**, run the New-Project Checklist (below) before writing feature code, and hold every migration, API route, and deploy config to the five rules above. When you're **reviewing**, read the code against the checklist and the full standard and flag anything that deviates — an unguarded table, a `service_role` key that could reach the client, a secret in the repo, a missing privacy-layer control.
 
 For anything beyond the summary here — the exact GitHub org settings, the full Supabase authorization rules, the Cloudflare perimeter config, or the three-layer compliance framework and when each layer applies — read `references/full-standard.md`. Read it whenever a decision isn't fully answered by the five rules, and always before setting up a brand-new repo or database or before adding tables that hold financial, health, or government-ID data.
+
+## Check before you commit or push
+
+Anything about to enter version control or leave the machine is the highest-risk moment — it's where a leaked key becomes permanent (git history) or public. **Before running `git add`/`git commit`/`git push`, and before writing any config or env file, actively check the change**, don't wait to be asked:
+
+- **No secrets in the diff.** Scan what's being committed for keys, tokens, passwords, `service_role` keys, private-key blocks, cloud credentials, or a real `.env`. If you find one, stop — do not commit. Move it to an env var / secret store, and if it was already committed, say so plainly: revoke and rotate it in the issuing platform first (git history keeps it).
+- **No secret/key files staged.** `.env`, `.env.*`, `*.pem`, `*.key`, `id_rsa`, `credentials.json` must never be committed — confirm they're in `.gitignore`.
+- **`service_role` stays server-side.** Never let it reach a client component, a `NEXT_PUBLIC_` var, or the browser bundle.
+- **New tables ship with RLS.** If the change adds a table holding user/tenant data, confirm the migration enables RLS deny-by-default in the same change.
+
+In Claude Code this plugin also enforces a deterministic pre-commit/push gate (see the hook) that hard-blocks the unambiguous cases — a secret/key file being staged, a private-key block, an AWS key, or a `service_role` key value entering a commit or push. The gate catches the catastrophic; you catch the nuanced. If the gate blocks a push, don't work around it — fix the underlying issue.
+
+## Using the built-in `security-review` together with this standard
+
+Claude Code ships a separate built-in `security-review` skill that diffs a git branch and scans the changed code for vulnerabilities — that's its job, and it's good at the diff mechanics (it needs a git repo to run). This skill is complementary, not competing: when a code-diff review is happening, let the built-in do the diff scan and **layer these Spanner-specific checks on top** — RLS enabled on every data table, `service_role` never client-side, never join an RLS table to a non-RLS table, server-side ownership checks before returning records, and the right compliance layer for the data involved.
 
 ## New-Project Checklist — run before feature code
 

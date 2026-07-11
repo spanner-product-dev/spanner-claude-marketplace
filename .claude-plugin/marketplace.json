@@ -8,8 +8,8 @@
     {
       "name": "spanner-security",
       "source": "./plugins/spanner-security",
-      "description": "Spanner PD's secure-by-default engineering standard — GitHub, Supabase, and Cloudflare rules plus the three-layer compliance framework. Applies automatically when building or reviewing anything touching code, data, auth, or deployment.",
-      "version": "1.0.0",
+      "description": "Spanner PD's secure-by-default engineering standard + a pre-commit/push secret gate — GitHub, Supabase, and Cloudflare rules plus the three-layer compliance framework. Applies automatically when building, committing, or pushing anything touching code, data, auth, or deployment.",
+      "version": "1.1.0",
       "category": "security"
     },
     {
