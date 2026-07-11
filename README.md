@@ -6,6 +6,7 @@ A Claude Code plugin marketplace for Spanner Product Development. Publish this d
 | Plugin | What it does |
 |---|---|
 | `spanner-security` | Spanner's secure-by-default engineering standard as an always-on skill. |
+| `spanner-toolkit` | Spanner's working skill set for Claude Code — project setup, SpannerOS migrations/CRUD scaffolding, Torque UI, design loop, operating model, portal deploy, domain/SSL/DNS, weekly digest, matrix sync. |
 
 ## For teammates — install (per user)
 ```

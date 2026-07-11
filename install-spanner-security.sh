@@ -39,6 +39,7 @@ mk["spanner"] = {"source": {"source": "github",
                             "repo": "spanner-product-dev/spanner-claude-marketplace"}}
 ep = data.setdefault("enabledPlugins", {})
 ep["spanner-security@spanner"] = True
+ep["spanner-toolkit@spanner"] = True
 
 with open(path, "w") as f:
     json.dump(data, f, indent=2)
@@ -47,4 +48,4 @@ print("Wrote", path)
 PY
 
 python3 -m json.tool "$FILE" >/dev/null && echo "valid JSON — OK"
-echo "Done. Quit and reopen Claude Code, then run /plugin — spanner-security should appear under 'Managed'."
+echo "Done. Quit and reopen Claude Code, then run /plugin — spanner-security and spanner-toolkit should appear under 'Managed'."
