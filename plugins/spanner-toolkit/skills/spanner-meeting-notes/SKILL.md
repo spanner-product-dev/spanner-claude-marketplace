@@ -264,6 +264,12 @@ screen *and* what was decided about it.
 
 ### 5. Compose the notes
 
+**Layout: bullets, not prose.** Write the discussion/topic sections as short
+**bulleted line items** — one idea per bullet under each heading — never as
+narrative paragraphs. Mason's standing preference is a scannable, bulleted body
+throughout. Key Outcomes, Decisions, and Action Items are already bulleted/tabular
+— keep those.
+
 Follow the established structure (plain headings, tight bullets, tables for
 action items):
 
@@ -277,13 +283,31 @@ action items):
 # Sources
 ```
 
-When screenshots exist, place each inside the topic section it belongs to, with
-a caption line stating the capture time and what it shows, e.g.:
+When screenshots exist, place each inside the topic section it belongs to. The
+caption is a single **italic header line** (capture time + what the sheet is +
+context) followed by the on-sheet notes **broken out as one bullet per line** —
+mirror how the source sheet lays them out; never collapse them into one inline
+run-on sentence with semicolons. E.g.:
 
 ```
 ![Next Week resourcing dashboard](https://spanneros-wip.pages.dev/screenshots/2026-06/20260605-141312-meeting.png)
-*2:13 PM — Forecast sheet "Next Week" tab: 23 hrs available; Damien 13, Mason 10*
+*2:13 PM — Forecast sheet "Next Week" tab (23 hrs available):*
+
+- Hours: Damien 13, Mason 10
+- Diassentials may start latter half of the week
+- Mason to cover Fuji budget report
 ```
+
+**Notion image caveat (important).** A portal URL embed (`![](https://spanneros-wip.pages.dev/...)`)
+will **not render in Notion** — the portal is behind Cloudflare Access, so Notion's
+image proxy gets an Error 422, even though the link works in a browser for the
+team. Do **not** rely on the portal-URL embed in Notion. Instead: copy the PNG to
+a folder the user can reach (e.g. their project workspace) and hand it to them via
+`present_files` to drag into the page (a native Notion upload renders for
+everyone), or attach it with `notion-create-attachment` when a non-SSO public URL
+is available. Keep a plain browser link to the portal URL in the caption/Sources
+for team members. `notion-create-attachment` cannot upload a local binary or pull
+the SSO-gated URL, so drag-drop is usually the reliable path.
 
 **Action items — 4-column Notion table + carry-over.** Render action items as a
 Notion `<table>` with a `<colgroup>` so widths stick:
