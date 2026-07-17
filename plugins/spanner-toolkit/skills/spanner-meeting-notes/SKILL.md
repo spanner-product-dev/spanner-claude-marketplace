@@ -46,6 +46,14 @@ more than one exists:
 - **Otter** — use the Otter transcript/notes export when that's what the author
   has (pasted in chat, dropped in Drive, or via an Otter connector if one is
   configured). Otter gives speaker-labeled lines and a summary the same way.
+- **Local Transcripts folder** — Zoom/Otter exports are often dropped as `.txt`
+  files in the author's Transcripts folder (Mason: the connected **Transcripts**
+  Google Drive folder). This is frequently the *only* source, since Granola/Zoom
+  connectors may return nothing for a given meeting. Fresh exports often land with
+  a generic name (`transcript.txt`, `transcript1.txt`) or a raw export name
+  (`SpannerOS Sync 2026-07-09 10_34(GMT-7_00).txt`) — identify the meeting from
+  the first timestamp + speakers, then **rename it to the folder convention** (see
+  the infra table and step 1).
 
 **Timestamp normalization (important for screenshot matching).** Granola/Zoom
 lines carry Pacific **wall-clock** times (`**Giles Lowe** 11:02:44`). Otter
@@ -69,6 +77,8 @@ missing and ask them to paste an export rather than guessing at content.
 | Portal SSO | The portal is behind Cloudflare Access — image embeds in Notion may not render for Notion's proxy even though links work for the team in a browser |
 | Local macOS screenshot folder (per-user) | Resolve in order: (1) `defaults read com.apple.screencapture location`; (2) the user's configured/known folder; (3) `~/Desktop` (macOS default). The user can also just name it or paste files. Known configs — Mason: `~/Documents/Screenshots`. |
 | macOS screenshot filename | `Screenshot YYYY-MM-DD at H.MM.SS AM/PM.png` — **Pacific local wall-clock**, 12-hour, unpadded hour, dot separators (e.g. `Screenshot 2026-07-13 at 11.36.33 AM.png` = 11:36:33 AM PT). If a name is unparseable, fall back to the file's modification time. |
+| Local transcripts folder (per-user) | Mason: the connected **Transcripts** Google Drive folder. Fresh Zoom/Otter exports may arrive as `transcript.txt` / `transcript1.txt` or a raw export name. |
+| Transcript filename convention | `YYMMDD-HHMM_Meeting_Name.txt` — 2-digit year, 24-hour **Pacific** start time, underscores in the name (e.g. `260717-1300_TPL_Sync.txt`, `260713-1030_SpannerOS_Standup.txt`). Rename any generically-named export to this before finishing. |
 
 If the repo folder isn't mounted, request it via `request_cowork_directory` with
 path `~/Developer/spanner-internal-website`. If the user doesn't have that repo
@@ -173,7 +183,24 @@ Invited, didn't speak (unconfirmed): Jorge, Alyssa." If a Slack message in the
 channel shows someone explicitly bowing out ("I'll skip today"), you can upgrade
 that to "absent."
 
+**Rename the raw transcript file.** If the transcript came from a local
+Transcripts folder with a generic or raw export name (`transcript.txt`,
+`transcript1.txt`, `SpannerOS Sync 2026-07-09 10_34(GMT-7_00).txt`), rename it to
+the convention `YYMMDD-HHMM_Meeting_Name.txt` using the meeting's Pacific start
+time derived from the first transcript timestamp (e.g. `260717-1300_TPL_Sync.txt`).
+Do this even when there are no screenshots — it keeps the folder consistent and is
+part of finishing the job. Match the `Meeting_Name` to how sibling files in the
+folder are named.
+
 ### 2. Find in-window screenshots (enrichment — skip if none)
+
+**Mount both folders first.** The portal repo
+(`~/Developer/spanner-internal-website`) and the author's local screenshot folder
+(e.g. `~/Documents/Screenshots`) may each need mounting via
+`request_cowork_directory` before you can open images: `Glob` can *list* files in
+an unmounted path, but `Read` cannot open them until the folder is connected.
+Request both, then list and read.
+
 
 Gather from both possible sources; use whichever exist. In all cases, "in window"
 = the meeting window from step 1, padded ±5 min. If the user pasted a specific
