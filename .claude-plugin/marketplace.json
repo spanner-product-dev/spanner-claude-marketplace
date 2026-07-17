@@ -15,8 +15,8 @@
     {
       "name": "spanner-toolkit",
       "source": "./plugins/spanner-toolkit",
-      "description": "Spanner's working skill set for Claude Code — project setup, SpannerOS schema migrations and CRUD scaffolding, Torque product-UI language, design-review loop, operating model, internal-portal deploy, domain/SSL/DNS, weekly digest, and matrix task sync. Brings terminal Claude Code to parity with the org skill library.",
-      "version": "1.0.0",
+      "description": "Spanner's working skill set for Claude Code — project setup, SpannerOS schema migrations and CRUD scaffolding, Torque product-UI language, design-review loop, operating model, internal-portal deploy, domain/SSL/DNS, weekly digest, matrix task sync, and meeting notes (Granola/Zoom/Otter → Notion, with optional screenshot enrichment). Brings terminal Claude Code to parity with the org skill library.",
+      "version": "1.1.1",
       "category": "productivity"
     }
   ]
