@@ -6,7 +6,8 @@ A Claude Code plugin marketplace for Spanner Product Development. Publish this d
 | Plugin | What it does |
 |---|---|
 | `spanner-security` | Spanner's secure-by-default engineering standard as an always-on skill. |
-| `spanner-toolkit` | Spanner's working skill set for Claude Code — project setup, SpannerOS migrations/CRUD scaffolding, Torque UI, design loop, operating model, portal deploy, domain/SSL/DNS, weekly digest, matrix sync. |
+| `spanner-toolkit` | Spanner's working skill set for Claude Code — project setup, Apps Script/clasp guardrails, SpannerOS migrations/CRUD scaffolding, Torque UI, design loop, operating model, portal deploy, domain/SSL/DNS, weekly digest, matrix sync, meeting notes. |
+| `spanner-project-launch` | Automates the BD-to-PD Launch Checklist — Notion tracker entry, planner + exec deck (via planner scripts), Drive folders, Slack, Calendar, email drafts, run logging, and the manual punch list. |
 
 ## For teammates — install (per user)
 ```
