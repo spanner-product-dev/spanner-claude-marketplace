@@ -1,11 +1,11 @@
 {
   "name": "spanner-toolkit",
-  "version": "1.1.1",
-  "description": "Spanner's working skill set for Claude Code — project setup, SpannerOS schema migrations and CRUD scaffolding, the Torque product-UI language, the design-review loop, operating model, internal-portal deploy, domain/SSL/DNS troubleshooting, weekly digest, matrix task sync, and meeting notes (Granola/Zoom/Otter → Notion, with optional screenshot enrichment). Gives terminal Claude Code the same Spanner skills that Cowork and the desktop/browser app get from the org skill library.",
+  "version": "1.2.0",
+  "description": "Spanner's working skill set for Claude Code — project setup, Apps Script/clasp guardrails for the planner fleet, SpannerOS schema migrations and CRUD scaffolding, the Torque product-UI language, the design-review loop, operating model, internal-portal deploy, domain/SSL/DNS troubleshooting, weekly digest, matrix task sync, and meeting notes (Granola/Zoom/Otter → Notion, with optional screenshot enrichment). Gives terminal Claude Code the same Spanner skills that Cowork and the desktop/browser app get from the org skill library.",
   "author": {
     "name": "Spanner Product Development",
     "email": "mason_curry@spannerpd.com"
   },
   "homepage": "https://github.com/spanner-product-dev",
-  "keywords": ["spanner", "spanneros", "torque", "scaffolding", "migrations", "toolkit"]
+  "keywords": ["spanner", "spanneros", "torque", "scaffolding", "migrations", "toolkit", "apps-script", "clasp", "planners"]
 }
