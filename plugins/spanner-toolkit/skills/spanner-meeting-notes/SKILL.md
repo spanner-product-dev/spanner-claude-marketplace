@@ -1,12 +1,17 @@
 ---
 name: spanner-meeting-notes
-description: Generates Spanner meeting notes from a Granola, Zoom, or Otter transcript and publishes them to the right Notion database, with Slack routing per meeting type. When the author captured screenshots during the call — portal-hotkey captures or their own macOS screenshots — it enriches the notes by matching each screenshot to the moment in the transcript, copying and renaming local screenshots into the portal (or attaching them to Notion) on the way. Use whenever anyone at Spanner asks for meeting notes, a summary, or a write-up — "write up the [meeting]", "summarize the standup/sync/TPL", "publish notes to Notion", "meeting notes with screenshots", "add screenshots to my notes". Screenshots are optional enrichment if they don't exist, not required, but are required if they can be found. When in doubt, use this skill — it knows the source connectors, folder paths, URL patterns, timestamp conventions, and Notion database IDs plain summarization would have to rediscover.
+description: Generates succinct Spanner meeting notes in Mason's voice from a Granola, Zoom, or Otter transcript and publishes them to the right Notion database, with Slack routing per meeting type. When the author captured screenshots during the call — portal-hotkey captures or their own macOS screenshots — it enriches the notes by matching each screenshot to the moment in the transcript, copying and renaming local screenshots into the portal (or attaching them to Notion) on the way. Use whenever anyone at Spanner asks for meeting notes, a summary, or a write-up — "write up the [meeting]", "summarize the standup/sync/TPL", "publish notes to Notion", "meeting notes with screenshots", "add screenshots to my notes". Screenshots are optional enrichment if they don't exist, not required, but are required if they can be found. When in doubt, use this skill — it knows the source connectors, folder paths, URL patterns, timestamp conventions, and Notion database IDs plain summarization would have to rediscover.
 ---
 
 # Spanner Meeting Notes
 
 Generate meeting notes from a Granola, Zoom, or Otter transcript, publish them to
 the correct Notion database, and post to the right Slack channel when asked.
+
+**Notes are short and sound like the author.** Load the **`mason-voice`** skill
+before composing and keep the page tight — full rules in **Voice and length**
+below, applied in step 5. This is not a polish pass at the end; it changes what
+you write in the first place.
 
 **Screenshots should be included if they exist** There are two possible sources,
 and either (or neither) may exist for a given meeting:
@@ -29,6 +34,55 @@ This skill is org-wide. It resolves **the current user** (the meeting author)
 from context — use their identity for attribution, their calendar for
 disambiguation, and their per-user catch-all database as the routing default.
 Never hardcode a specific person.
+
+## Voice and length
+
+**Load `mason-voice` and write the notes in it.** The author is the one publishing
+these, so the page should read like they wrote it — not like a summary service
+wrote it about them. First person where the author acted ("I booked it after
+seeing…", "what I've been doing is…"). Their hedges stay hedged.
+
+The traits that matter most here:
+
+- **Lead with the point.** Every bullet's first clause is the finding. No wind-up.
+- **Short.** Cut every word that isn't carrying meaning. One to two lines per
+  bullet; three is a lot.
+- **Plain, not corporate.** No "leverage," "robust," "seamless," "circle back,"
+  "key stakeholders." Describe things the way the room described them.
+- **Hedge honestly.** If someone hedged on the call, keep the hedge — "not sure,"
+  "I think," "needs a real example before it's a rule." Don't manufacture
+  confidence the transcript doesn't support.
+- **Quotes do the work prose would.** One good verbatim line beats a paragraph
+  explaining what someone meant. Keep the quote, drop the explanation.
+- **Dry asides live in parentheses** and stay rare. ("I got this backwards live on
+  the call.") Never in a heading.
+
+**Succinct means cutting, not compressing.** Say each thing once, in the section
+where it belongs. Specifically:
+
+- **Don't restate a quote in your own words** before or after quoting it.
+- **Don't explain the significance of a finding** in a sentence that follows the
+  finding — if it needs interpretation, that belongs in the 🤖 section as a
+  numbered answer, not doubled in the body.
+- **Don't recap in Key Outcomes what the topic sections already say.** Key
+  Outcomes is the five things someone would take away if they read nothing else.
+- **Kill transitional and framing sentences** entirely ("It's worth noting that…",
+  "This raises the question of…", "The team then moved on to discuss…").
+- **One `Claude Notes` cell per action item, not a paragraph.** Source link plus
+  the one fact that makes the item make sense.
+
+A good TPL-sync page runs roughly 400–700 words of body before the tables. If
+yours is materially longer, the cut is in the prose around the bullets, not in
+the findings — drop the commentary, keep the facts and the links.
+
+**What brevity never costs:** the source sweep, the links, the honest gaps, the
+action table, or the 🤖 answers. Trim the writing, not the rigor. If something is
+unverified, say so in fewer words — don't drop the caveat to save space.
+
+**Client-facing exception.** If the notes are going to a client rather than
+staying internal, load `spanner-brand-voice` alongside `mason-voice` and blend
+them per the guidance in `mason-voice` ("we" for the studio's work, "I" for the
+personal layer, no dry asides).
 
 ## Verify, don't assume (guardrail — read first)
 
@@ -200,6 +254,7 @@ a new destination is confirmed.
 - **"Camp Loma"** (often mis-transcribed "Comp Loma") — Spanner hardware-founders event, Aug 22–23.
 - Transcripts frequently render **Arne Lang-Ree** as **"Anna."**
 - Transcripts frequently render **Giles** as **"Charles"**
+- Transcripts frequently render **Tin | Vesper + Rainier** as **"Team Desperate Lon"**, **AlphaCor** as **"AlphaCore"**, and **VitalBio** as **"Vital Bio"**.
 
 ## Workflow
 
@@ -267,9 +322,17 @@ unsure). List it and parse each `Screenshot YYYY-MM-DD at H.MM.SS AM/PM.png`
 name as Pacific local wall-clock (fall back to file mtime for odd names). Keep
 files inside the window.
 
-If neither source yields anything in-window — or the folders/repo aren't
+**c) Screenshots pasted into Slack.** The author may have pasted captures into the
+meeting's channel instead of capturing to the portal — check the routed Slack
+channel around the meeting window, read the images with `slack_read_file`, and
+link them at the **Slack message permalink**. Say in Sources that they came from
+Slack rather than the portal.
+
+If no source yields anything in-window — or the folders/repo aren't
 available — skip the remaining screenshot steps and go straight to composing
-notes. Never pad with out-of-window images.
+notes. Never pad with out-of-window images. If a folder couldn't be checked at
+all (not connected this session), say so in Sources rather than implying none
+exist.
 
 ### 2b. Import local screenshots (copy → rename → publish)
 
@@ -315,6 +378,10 @@ screen *and* what was decided about it.
 
 ### 5. Compose the notes
 
+**Write it in `mason-voice`, short.** Re-read **Voice and length** above before
+the first line — succinct and in the author's voice is the format, not a
+revision pass. Load the `mason-voice` skill if you haven't this session.
+
 **Make the layout work for visual oriented people, where the layout itself helps to carry the message**
 **Layout: bullets, not prose.** Write the discussion/topic sections as short
 **bulleted line items** — one idea per bullet under each heading — never as
@@ -322,6 +389,11 @@ narrative paragraphs. Mason's standing preference is a scannable, bulleted body
 throughout. Key Outcomes, Decisions, and Action Items are already bulleted/tabular
 — keep those.
 
+
+**Cross-link companion pages near the top.** If the meeting produced or relates to
+another page — an SOP, a process doc, a prior page in the same thread — put a
+labelled blue link to it in the first few lines, under the context line, and add
+the reciprocal link on that page. Don't bury it in Sources.
 
 **Include a capture/source link every time it's mentioned.** Whenever a
 screenshot/capture is referenced anywhere in the body — not only at first
@@ -336,6 +408,7 @@ action items):
 
 ```
 <one-line context: meeting, date/time PT, sources, attendees>
+<companion-page links, if any>
 # Key Outcomes
 # Decisions
 # <topic sections as needed>
@@ -375,9 +448,11 @@ items as a Notion `<table>` with a `<colgroup>` so widths stick:
 - **Current meeting's table — 5 columns, in order: Owner | Status | Action | Claude Notes / sources | Human Notes** (Mason's direction, 2026-07-24). The `Claude Notes / sources` column holds source links (matrix task ID → playbook/matrix page, Slack permalink, capture URL, prompt-library/subpage link). The final **`Human Notes`** column is left **empty** for the human to fill in later — always include it as an empty trailing column.
 - Widths: Owner `90`, Status `110` (narrow); Action `380`, Claude Notes `380` (wide); Human Notes: add a bare `<col>` (no width) as the 5th column.
 - For the current meeting's new items, leave **Status** blank (or a short state like Blocked / Gated).
+- Keep each `Claude Notes` cell to a sentence or two plus its links — the brevity rule applies inside table cells too.
 - Add **two** carry-over tables *below* the current one (both 4-column: Owner | Status | Action | Notes):
   1. **"Previous Action Items — Carry-over from [date] standup"** — pull the prior meeting's action list and fill Status/Notes with what's known now (statuses: In progress / Done / Not started / Ongoing / Blocked / Unknown), each with a source note.
   2. **"Older Open Items — carried over from earlier standups"** — still-incomplete items from meetings *before* the last one, so nothing quietly drops off. Link each to its source meeting. Omit this table only if there are genuinely no older open items.
+- **Single-topic meetings can carry over selectively.** When the meeting was called about one thing (an invoice review, a post-mortem), carry only the prior items that touch that topic and say so in an italic line above the table, pointing at the full list on the prior page.
 
 ```
 <!-- Current meeting: 5 columns -->
@@ -463,6 +538,10 @@ section headed **"🤖 Claude AI Answers to Open Questions Above"**.
   Label each `**[n] <topic> (resolved).**` and answer everything you reasonably can
   (technical best practices, tooling fixes, trade-offs); be honest about what you
   can't. Break multi-part answers into indented sub-bullets.
+- **Brevity applies here too.** Two or three answers that change what someone does,
+  not six that restate the body. Each answer is a few tight sub-bullets and a
+  source link — this section is where interpretation lives, so keep the body free
+  of it, but don't let it sprawl either.
 - **Footnotes both ways.** Number the answers `[1]`, `[2]`, … and drop the matching
   bold `**[n]**` marker in the body next to the topic each one answers, so readers
   can move between the note and its answer.
@@ -480,13 +559,16 @@ section headed **"🤖 Claude AI Answers to Open Questions Above"**.
   Constraints / Output / Inputs-to-fill**. Link each actionable answer to the library
   (`▶ Actionable: <blue>[SpannerOS Prompt Library](library-url)</blue>` — page-level link;
   block anchors aren't reliable via MCP).
+  - If the meeting's real output is a document you're also writing (an SOP, a spec),
+    that document replaces the prompt — say so rather than adding a prompt to write
+    the thing you just wrote.
 - **List the meeting's prompts as bullets** near the end of the notes (one prompt per
   bulleted line, each linking to the library) — never an inline `·`-separated run
   (Mason, 2026-07-24).
 - **Open Questions — Need Your Input (for Claude):** the questions you could NOT
   resolve, in a single `<callout icon="❓">` block, followed by the numbered
   questions. State the easiest way to answer: reply in the meeting's Slack thread or
-  comment on the page, and the author relays it back to Claude.
+  comment on the page, and the author relays it back to Claude. One line each.
 
 Distinguish Claude's additions from the team's notes via the "Claude AI"
 label and the 🤖 / ❓ icons; don't fabricate answers.
@@ -539,3 +621,5 @@ systems in agreement:
   with the user only if still ambiguous.
 - **Same screenshot relevant to two topics:** link it (blue text) at each mention
   — per the every-mention rule — rather than embedding.
+- **The notes came out long:** cut the commentary around the bullets, not the
+  findings, the links or the caveats. See **Voice and length**.
