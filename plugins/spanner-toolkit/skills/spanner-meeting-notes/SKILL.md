@@ -37,13 +37,17 @@ Never hardcode a specific person.
 
 ## Voice and length
 
-**Load `mason-voice` and write the notes in it.** The author is the one publishing
-these, so the page should read like they wrote it — not like a summary service
-wrote it about them. Write it in third person, naming the author ("Mason shifted
-the launch date", "Mason's Sep 2 post"). Use another person's voice skill if they are the author.  First person can occasionally be used for aside comments.
-Claude's own first person stays where Claude is genuinely the one speaking: the
-Claude Notes cells, the 🤖 answers, and the open-questions callout. Their hedges
-stay hedged.
+**Load the author's voice skill and write the notes in it** — `mason-voice` when
+Mason is the author, that person's own voice skill when someone else is. The
+author is the one publishing these, so the page should read like they wrote it —
+not like a summary service wrote it about them.
+
+**Write it in third person, naming the author** — "Mason shifted the launch date,"
+"Mason's Sep 2 post" — never "I" or "me" for the author. Two exceptions: an
+occasional dry aside may stay in first person, and Claude's own first person
+stays where Claude is genuinely the one speaking — the `Claude Notes` cells, the
+🤖 answers, and the open-questions callout. Verbatim quotes keep whatever
+pronouns the speaker used. Their hedges stay hedged.
 
 The traits that matter most here:
 
@@ -57,8 +61,8 @@ The traits that matter most here:
   confidence the transcript doesn't support.
 - **Quotes do the work prose would.** One good verbatim line beats a paragraph
   explaining what someone meant. Keep the quote, drop the explanation.
-- **Dry asides live in parentheses** and stay rare. ("I got this backwards live on
-  the call.") Never in a heading. - These can be first person
+- **Dry asides live in parentheses** and stay rare, and may stay in first person.
+  ("I got this backwards live on the call.") Never in a heading.
 
 **Succinct means cutting, not compressing.** Say each thing once, in the section
 where it belongs. Specifically:
