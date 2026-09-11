@@ -62,50 +62,60 @@ using the rules below, derived from Steps 6–7 and 9 of spanner-brand-visual.
 
 | Surface | Logo to use |
 |---------|-------------|
-| HTML on white/light background | `2024_Azure_Refresh/Spanner_Logo_Azure_2024.svg` inline at `height:45px` |
-| HTML on Navy / dark section | White-only SVG inline at `height:45px`; set `fill:currentColor` |
-| PPTX / DOCX on light | `Spanner_Logo_Azure_2024_640px.png` (1280px for hero slides) |
-| PPTX / DOCX on Navy | `Spanner-Logo-White-Rev-01.png` |
-| Email signature | `Spanner_Logo_Azure_2024_320px.png` on light; Dark Gray PNG as fallback |
-| Print | SVG (current Azure) or legacy Blue EPS |
+| HTML on white/light background | `Spanner-Wordmark-Azure.svg` inline at `height:30px` |
+| HTML on Navy / dark section | `Spanner-Wordmark-White.svg` inline at `height:30px`, or the Azure file with `color:#fff` |
+| PPTX / DOCX on light | `Spanner-Wordmark-Azure-640.png` (1280px for hero slides) |
+| PPTX / DOCX on Navy | `Spanner-Wordmark-White-640.png` |
+| Email signature | `Spanner-Wordmark-Azure-320.png` on light; `Spanner-Wordmark-Navy-320.png` as fallback |
+| Print | `Spanner-Wordmark-White.eps` or `Spanner-Wordmark-DarkGray.eps` |
 
-All logo files live in `assets/Logo/0_Spanner Logo Package (External Sharing OK)/` relative
-to the `spanner-brand-visual` skill, or via the public mirror at
-`https://raw.githubusercontent.com/spanner-product-dev/spannerpd-brand-assets/main/brand/Logo/`.
-Never reference `z_Archive/`. Never use the legacy Blue files unless specifically matching
-pre-2024 collateral.
+All logo files live in `assets/Logo/2026_Spanner_Logo_Files/` relative to the
+`spanner-brand-visual` skill, or via the public mirror at
+`https://raw.githubusercontent.com/spanner-product-dev/spannerpd-brand-assets/main/brand/Logo/2026_Spanner_Logo_Files/`.
+**Use the 2026 set — every file in it is ink-tight.** The older
+`0_Spanner Logo Package (External Sharing OK)/` is archival: its 2024 Azure SVG and the
+three PNGs rendered from it carry a padded artboard where ink fills only 61.9% of the
+declared height, so `height:45px` renders a 27.9px wordmark. Never reference `z_Archive/`,
+and never use the legacy Blue files unless matching pre-2024 collateral.
 
 **Inline SVG approach for HTML (preferred over `<img>` for headers and dark sections):**
 ```html
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 813.16 170.95"
-     style="height:45px;width:auto;fill:currentColor" aria-label="Spanner">
-  <!-- paste full path data from 150810_Spanner_Logo_White-only.svg here -->
-  <!-- on dark surfaces: color:white on parent drives fill -->
-  <!-- on light surfaces: set color:var(--navy) or color:var(--azure) on parent -->
+     style="height:30px;width:auto;color:#fff" aria-label="Spanner">
+  <!-- paste the seven paths from 2026_Spanner_Logo_Files/Spanner-Wordmark-Azure.svg -->
+  <!-- paths carry fill="currentColor", so `color` on the svg or any ancestor drives it -->
+  <!-- dark surfaces: color:#fff  ·  light surfaces: color:var(--navy) or var(--azure) -->
 </svg>
 ```
+The viewBox is cropped to the artwork, so **the stated height IS the rendered wordmark**.
+Never inline the padded `0 0 965.951 275.986` box.
 
-**HTML header baseline alignment — critical:**
+**HTML header baseline alignment — the s07 lockup:**
 
-The Spanner wordmark SVG has descender space at the bottom — letter strokes occupy only
-~22%–68% of the SVG height, not centered. To align the visible letterforms with adjacent
-text and dividers:
+`height` spans the full ink, which includes the descender of the **p**. The letter body is
+**0.740 × height** and the baseline sits **0.260 × height** above the bottom edge — so a
+30px logo gives 22.2px letters. Align the pipe and label to the letter body, not the box:
 
 ```css
 /* On the flex row containing logo + divider + title: */
-.header-inner { display: flex; align-items: flex-end; gap: 16px; }
+.header-inner { display: flex; align-items: flex-end; gap: 24px; }
 
-/* Vertical divider bar: */
-.header-pipe  { width: 1px; height: 21px; background: var(--azure); margin-bottom: 14px; }
+/* Logo: */
+.header-mark  { height: 30px; width: auto; display: block; }
 
-/* Text label next to logo: */
-.header-label { margin-bottom: 11px; }
+/* Vertical divider bar — spans the letter body, centred on it: */
+.header-pipe  { width: 1px; height: 28px; background: var(--azure); margin-bottom: 5px; }
 
-/* Logo SVG itself needs no margin adjustment — flex-end handles it */
+/* Text label next to logo — 22px/400, baseline coincident with the wordmark's: */
+.header-label { font-size: 22px; font-weight: 400; line-height: 1; margin-bottom: 5px; }
+
+/* Bar is padding-driven, not fixed-height: */
+.header-bar   { padding: 11px 0; }   /* ~60px tall with nav links */
 ```
 
-This ensures the bottom of the visible wordmark strokes, the pipe, and the adjacent
-label text all share the same baseline.
+These offsets are derived from the cropped geometry. **The older 21 / 14 / 11 values were
+tuned against the padded file and are wrong here** — that mismatch is what made previously
+correct headers break when the viewBox was cropped.
 
 **Logo clearspace:** height of the lowercase "s" on all sides. Never box, skew, rotate,
 add shadow/stroke/opacity, change letter colors, or rearrange characters.
@@ -142,12 +152,12 @@ Visual craft, brand fidelity, logo compliance, aesthetic quality.
 
 Universal checks:
 - [ ] Logo present and using the correct file for this surface and background
-- [ ] Logo pulled from `0_Spanner Logo Package (External Sharing OK)/` — not Archive
-- [ ] Logo at correct size (`height:45px` for HTML headers; correct PNG for PPTX/DOCX)
+- [ ] Logo pulled from `2026_Spanner_Logo_Files/` — not the padded 2024 files, not Archive
+- [ ] Logo at correct size (`height:30px` for HTML headers → 22.2px letters; 2026 PNG for PPTX/DOCX)
 - [ ] No legacy teal logo (`#49B5CF`) on a surface that uses current Azure `#06A6ED`
 - [ ] Logo clearspace respected — no crowding against text or edges
 - [ ] Logo not skewed, rotated, shadowed, stroked, or otherwise misused
-- [ ] **HTML header alignment**: flex row uses `align-items: flex-end`; pipe is `height:21px; margin-bottom:14px`; adjacent label has `margin-bottom:11px`
+- [ ] **HTML header alignment is s07**: flex row uses `align-items: flex-end` with `gap:24px`; pipe is `height:28px; margin-bottom:5px`; label is 22px/400 with `margin-bottom:5px`; bar is `padding:11px 0`
 - [ ] Inter loaded; 120% type scale applied precisely
 - [ ] Navy #293A49 for text (not black or charcoal)
 - [ ] White or Navy backgrounds (Light Gray #D4D8DB as neutral only)
@@ -160,9 +170,11 @@ Universal checks:
 Format-specific:
 - **HTML** — sticky header; no `color:black` or `font-family:Arial` inline
 - **PPTX** — consistent margins; no Office default theme remnants;
-  `margin: 0` on all text boxes (PowerPoint inset trap); header lockup
-  aligned via wordmark optical center (45% of image height); final check
-  rendered in PowerPoint, not only LibreOffice preview
+  `margin: 0` on all text boxes (PowerPoint inset trap); header lockup from the
+  2026 PNGs — `lgH = 0.279`, width `lgH * (813.16 / 170.95)`, optical centre at
+  **37%** of image height (the padded 2024 files used 0.45 and 45%; do not mix
+  a file from one set with the maths from the other, or the wordmark resizes);
+  final check rendered in PowerPoint, not only LibreOffice preview
 - **DOCX** — named styles used; no Times New Roman
 - **SVG** — viewBox set; no hardcoded px on root element
 - **Email** — all styles inline; no `<link>` for web fonts; 600px-safe
