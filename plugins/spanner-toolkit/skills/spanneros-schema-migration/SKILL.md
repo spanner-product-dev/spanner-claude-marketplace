@@ -1,179 +1,229 @@
 ---
 name: spanneros-schema-migration
 description: >
-  Writes safe, correctly-formatted SQL migration files for SpannerOS's Supabase Postgres database.
-  Use whenever adding tables, columns, enum values, seed data, or constraints to SpannerOS —
-  especially for writing 002_schema_updates.sql and any future numbered migration files. Triggers
-  on: write the schema migration, add a column to [table], write 002_schema_updates, add the sm
-  enum value, reseed billing_roles, create a new table for, add the is_billable flag, or any
-  request involving ALTER TABLE, CREATE TABLE, ALTER TYPE, or schema changes in SpannerOS. Always
-  invoke this skill before writing migration SQL — it encodes safe patterns for Supabase, the
-  correct file numbering convention, and the style guide that must match 001_initial_schema.sql.
-  Schema mistakes are expensive to undo once a Supabase project has live data.
+  Writes, verifies and applies SQL migrations for the SpannerOS planner database (Supabase
+  Postgres, shared with two other projects). Use whenever adding or altering tables, columns,
+  enum values, constraints, RLS policies, functions or seed data — and whenever writing the
+  verification script that must ship with them. Triggers on: write the migration, add a column
+  to [table], add an RLS policy, change who can see [thing], write the verify script, apply to
+  staging, why is this query slow, or any request involving ALTER TABLE, CREATE TABLE, CREATE
+  POLICY, ALTER TYPE or GRANT in SpannerOS. Invoke it BEFORE writing any SQL: it encodes the
+  numbering rule, the verify-script contract, the RLS performance rules, and the split between
+  what Claude does and what Mason runs. Schema mistakes are expensive once a database has live
+  data, and this project has paid for every rule in here.
 ---
 
-# SpannerOS Schema Migration Writer
+# SpannerOS schema migrations
 
-## Read the existing schema first — always
-
-Before writing any SQL, read these files:
-
-1. `/Users/mcurry/Documents/Claude/Projects/Spanner Planner and Time Management/SpannerOS/schema/001_initial_schema.sql`
-   — List every table name, column, enum type and its values, RLS policy, and index.
-2. Every additional migration file in `SpannerOS/schema/` beyond 001
-   — Note what has already been applied so you don't duplicate it.
-
-Confirm the current state of the schema before writing a single line. Guessing at column names or enum values is the most common source of migration errors.
+**Rewritten 2026-09-15** after the project-scoped visibility build (migrations 032–037), which
+produced every rule below. The previous version pointed at a path that no longer exists and knew
+nothing about verification scripts.
 
 ---
 
-## File naming convention
+## Where things are
 
-Migrations are sequential SQL files in `SpannerOS/schema/`:
+| | |
+|---|---|
+| **SQL of record** | `~/Developer/spanner-planner/schema/` — tracked in git, and the definition of both databases' state |
+| **Working copy** | `…/Projects/SpannerOS/schema/` in Drive. Authored here, copied to the repo. **Keep them in step; nothing enforces it** |
+| **What is applied where** | `schema/README.md`. It is the source of truth — do not restate it in the plan or the architecture file, both have been wrong |
+| **Staging** | `cutkctzmojpgbwtoaiic` |
+| **Prod** | `lyerknxfxesoecmpipip` — **never without an explicit go-ahead** |
 
-```
-001_initial_schema.sql    ← exists, do not touch
-002_schema_updates.sql    ← next migration (write here)
-003_...                   ← future
-```
+Read the current schema before writing a line: `001_initial_schema.sql` for the baseline, then
+the later files for what has changed. Guessing at a column name or enum value is the most common
+way these go wrong.
 
-Name files with a short, descriptive suffix. Never edit `001_initial_schema.sql` — it's the historical baseline. All changes go in new numbered files.
+Three files in `schema/` belong to the **matrix** project (`003`, `004`, `005`) and one to CRM.
+They share the database, not the sequence. Never treat them as the planner's next number.
 
 ---
 
-## Safe patterns by operation type
+## The numbering rule
 
-### Adding an enum value
+**A number belongs to the migration that lands. A parked spec holds no reservation.**
+`program_review_notes` has now been penciled in for `027`, `029`, `030`, `031`, `032`, `033` and
+`034`, and lost every one. `015` was never written — the sequence runs `014` → `016`.
+
+**Re-check `schema/` immediately before claiming a number.** Numbers have been claimed on
+unmerged branches before.
+
+---
+
+## Writing the migration
+
+Match the house style, which is heavy on explanation because these files get read years later by
+someone deciding whether they may change something.
+
+- A header block stating **purpose, what is deliberately NOT in here, destructive or reversible,
+  idempotent or not, what it depends on, the numbering note, and the apply order.**
+- `create table if not exists`, `add column if not exists`, `create or replace function`, every
+  policy dropped before it is created. A migration that cannot be run twice will be run twice.
+- **Every new table needs RLS *and* a GRANT.** RLS decides which rows; the GRANT decides whether
+  the role may touch the table at all, and a missing one reads as `permission denied for table`
+  *before* RLS is evaluated. Grant `authenticated` and `service_role`, never `anon`, and list
+  tables explicitly — no `ALL TABLES IN SCHEMA`, because two other projects live here.
+- **`for all` with no `with check` reuses `using` as the insert check.** That reads as complete
+  and is not; it is how `time_entries` came to allow a member to write against any slot in the
+  database. Write the pair explicitly.
+- Prefer a **CHECK constraint over an enum** for a small value set. A CHECK can be widened *and*
+  narrowed; an enum label can never be dropped. Migration 032 chose a CHECK on that argument and
+  033 widened it the next day.
+- A new column with `NOT NULL` needs a DEFAULT, and the default decides who is affected on
+  arrival. Default to the value that changes nothing.
+- Introspect constraints with `pg_catalog.pg_constraint`, never
+  `information_schema.constraint_column_usage` — it silently returns nothing for some FKs, and a
+  check written the same way as the thing it checks reports a false PASS.
+- **Never `DROP TABLE` / `DROP COLUMN`, and never `TRUNCATE … CASCADE`.** Use `DELETE`, which
+  fails loudly against FK constraints instead of quietly taking children with it.
+
+---
+
+## RLS performance — the rules, with the numbers
+
+A policy predicate is evaluated **per row**, and a `security definer` function **cannot be
+inlined by the planner**. Putting one in a predicate is a cliff, not a slope:
+
+| Same query, 767 rows out | |
+|---|---|
+| RLS off | 0.63 ms |
+| `can_see_project(project_id)` per row | **195 ms** |
+| the rule hoisted into a set | 39.7 ms |
+| identity helpers wrapped as `(select f())` | **3.4 ms** |
 
 ```sql
--- ALTER TYPE ... ADD VALUE is irreversible in Postgres.
--- Confirm spelling carefully — you cannot undo this.
-ALTER TYPE user_role ADD VALUE 'sm';
+-- row scoping: a set the planner builds once per statement, then hash-probes
+using ( project_id in (select v from public.visible_project_ids() v) )
+
+-- identity: a scalar subquery forces one InitPlan instead of a call per row
+using ( user_id = (select public.current_user_id()) )
 ```
 
-This cannot be rolled back with a simple DROP. Double-check the exact value string before including it. Note it explicitly in a SQL comment so Mason can confirm before applying.
+The point-check form survives for `with check` clauses and inside definer functions, where it
+answers once. That leaves the rule written twice — so **a gate must assert the two spellings
+agree**, rather than trusting them to.
 
-### Adding a column
-
-```sql
--- Use IF NOT EXISTS so the migration is idempotent (safe to run twice).
--- New NOT NULL columns must have a DEFAULT to avoid locking the table.
-ALTER TABLE billing_roles
-  ADD COLUMN IF NOT EXISTS is_billable boolean NOT NULL DEFAULT true;
-
--- Nullable columns need no default.
-ALTER TABLE project_billing_roles
-  ADD COLUMN IF NOT EXISTS custom_name text,
-  ADD COLUMN IF NOT EXISTS custom_rate numeric;
-```
-
-### Making an existing column nullable
-
-```sql
-ALTER TABLE project_billing_roles
-  ALTER COLUMN billing_role_id DROP NOT NULL;
-```
-
-### Deleting and reseeding a lookup table
-
-```sql
--- Safe for lookup tables with no live user data yet.
--- Use DELETE (not TRUNCATE) if child tables may have rows — DELETE respects FK constraints
--- and will fail loudly rather than silently cascade.
-DELETE FROM billing_roles;
-
-INSERT INTO billing_roles (name, default_rate, is_billable) VALUES
-  ('CTO',                           350.00, true),
-  ('Principal',                     300.00, true),
-  ('Technical Program Lead',        275.00, true),
-  ('Sr. Product Development',       250.00, true),
-  ('Product Development',           175.00, true),
-  ('Product Development - EE/FW',   175.00, true),
-  ('NB - Technical Program Lead',   275.00, false),
-  ('NB - Sr. Product Development',  300.00, false),
-  ('NB - Product Development',      175.00, false)
-;
-```
-
-### Creating a new table
-
-```sql
-CREATE TABLE IF NOT EXISTS user_billing_roles (
-  user_id         uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  billing_role_id uuid NOT NULL REFERENCES billing_roles(id) ON DELETE CASCADE,
-  PRIMARY KEY (user_id, billing_role_id)
-);
-
--- Every new table needs RLS enabled.
-ALTER TABLE user_billing_roles ENABLE ROW LEVEL SECURITY;
-
--- Add policies based on the access pattern.
--- Look at similar tables in 001_initial_schema.sql for the right template.
-CREATE POLICY "Users can view their own billing roles"
-  ON user_billing_roles FOR SELECT
-  USING (user_id = auth.uid());
-
-CREATE POLICY "Admins can manage all user billing roles"
-  ON user_billing_roles FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
-```
+**Measure before claiming.** Migration 034's own header said the per-row cost was "very likely
+fine", gave three plausible reasons, and was 300× out. An `EXPLAIN (ANALYZE)` takes four minutes.
 
 ---
 
-## What not to do
+## The verify script — one per migration, no exceptions
 
-- **Never use `DROP TABLE` or `DROP COLUMN`** — destructive and irreversible; if removal is truly needed, discuss first
-- **Never edit `001_initial_schema.sql`** — it is the historical record; changes go in new numbered files
-- **Never skip RLS on a new table** — even lookup tables need it; Supabase exposes tables via the public API by default
-- **Never use `TRUNCATE ... CASCADE`** on tables that might have live rows in child tables — use `DELETE` instead, which will fail loudly if FK constraints are violated
-- **Never apply to Supabase without review** — show the full SQL and get approval first
+`verify-0NN-<name>.sql`, and it is the other half of the deliverable.
+
+**The contract:**
+
+- One transaction ending in **`ROLLBACK`**, so it is safe against a live database.
+- **A negative control first**, proving the harness can do the thing the other gates assert
+  fails. If G0 failed, everything below it is green for the wrong reason.
+- Every gate records a `PASS`/`FAIL` line **and the script `SELECT`s them back at the end** —
+  `supabase db query` swallows `NOTICE`, which would reduce a fourteen-gate run to "it didn't
+  error".
+- **Never raise on failure.** Raising discards the evidence; a failing run is identified by its
+  FAIL lines and its tally.
+- Impersonate with `set_config('request.jwt.claims', …)` + `set local role authenticated` — what
+  PostgREST does per request. Borrow a real user with a linked login and change their role inside
+  the transaction; a synthetic `public.users` row cannot work, because `auth_user_id` is an FK to
+  `auth.users`.
+- When a migration is meant to change **nothing** on arrival, **assert that** — inertness is
+  exactly the kind of claim that decays silently.
+
+### Write gates that assert behaviour, not something adjacent
+
+Four false failures in one day, all this mistake:
+
+| The gate said | What it actually asserted | The fix |
+|---|---|---|
+| "studio regression, 74437/74436" | a count taken **before** the script planted its own row | census after every write — and note RLS can only *restrict*, so seeing MORE rows than the owner is impossible as a regression |
+| "16 tables have no scope filter" | one **spelling** of the rule, after a refactor legitimately respelled it | accept every valid spelling, or assert the rule's effect |
+| "still takes 20.6 ms" | a **cold cache** on first call; the real figure was 3.2 ms warm | warm it, run twice and use the second, and compare against a **control** (a raw scan of the same table) rather than a constant someone typed |
+| "carries 1.50 logged hours" | "any hours **ever**" — a locked 2021 row no screen can render | scope the question to the window the surface actually renders |
+
+A gate that cries wolf is one people learn to skip, and then it is not a gate.
 
 ---
 
-## RLS policy patterns
+## Checking SQL before it reaches a database
 
-When writing RLS for a new table, match the pattern used on the most similar table in `001_initial_schema.sql`. Common patterns:
+There is no local Postgres. Parse it offline — this catches the typo that otherwise fails halfway
+through a migration in the SQL editor:
 
-- **User-scoped read**: `USING (user_id = auth.uid())`
-- **Admin full access**: `USING (EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin'))`
-- **Project member read**: `USING (EXISTS (SELECT 1 FROM project_users WHERE project_id = [table].project_id AND user_id = auth.uid()))`
-
-If unsure which policy pattern fits, ask rather than guess — wrong RLS lets in data that shouldn't be visible.
-
----
-
-## Output format
-
-1. Write the complete SQL file with a header comment block identifying: migration number, date, and a summary of changes
-2. Group changes into clearly commented sections (enums, table alterations, new tables, seed data)
-3. Show the full SQL before saving to disk
-4. State in plain English what each change does and flag any irreversible operations
-5. Ask for explicit approval before writing the file
-
----
-
-## Style guide (match `001_initial_schema.sql`)
-
-- Section dividers: `-- ============================================================`
-- Two blank lines between major sections
-- Inline comments on non-obvious fields or constraints
-- All names in `snake_case`
-- Constraint names explicit: `fk_table_column`, `uq_table_column`
-- Numeric amounts as `numeric(10,2)` for money, bare `numeric` for rates/multipliers
-- Header comment block at top of file:
-
-```sql
--- ============================================================
--- Migration: 002_schema_updates
--- Date: YYYY-MM-DD
--- Changes:
---   1. Add 'sm' value to user_role enum
---   2. Add is_billable to billing_roles
---   ...
--- ============================================================
 ```
+npm install pgsql-parser libpg-query      # in a scratch dir, NEVER in Drive
+```
+
+```js
+import { parse } from 'pgsql-parser'
+import { parsePlPgSQL } from 'libpg-query'
+await parse(sql)          // top-level statements
+await parsePlPgSQL(sql)   // the bodies inside $$ … $$, which parse() sees as strings
+```
+
+**Both halves matter:** `parse()` alone reports OK on a `do $$ … $$` block whose plpgsql is
+malformed. Verify the harness against deliberate errors in both positions before trusting it. It
+is a syntax check and nothing more — it cannot see a missing GRANT or an upsert that needs
+table-level SELECT.
+
+---
+
+## Applying — who does what
+
+**Claude writes, parse-checks and probes read-only. Mason applies.** In auto mode the write is
+refused by the permission classifier as a DDL write to a live database, and that split has held
+through every migration. Do not ask for a permission grant; hand over the commands.
+
+Read-only queries **do** run, including a `begin; … rollback;` probe that impersonates a user.
+Use them to check preconditions before handing anything over.
+
+One command per block:
+
+```bash
+cat ~/Developer/spanner-planner/supabase/.temp/project-ref
+```
+
+It must print the staging ref. **Both projects show a `main PRODUCTION` badge in the dashboard
+and that badge is the branch, not the environment** — the ref is the only reliable signal.
+
+```bash
+cd ~/Developer/spanner-planner && supabase db query --linked -f schema/0NN_name.sql
+```
+
+```bash
+cd ~/Developer/spanner-planner && supabase db query --linked -f schema/verify-0NN-name.sql
+```
+
+Then **confirm from the catalogue, not from the run output** — query `pg_policies`,
+`information_schema.columns`, `pg_proc` and watch the thing exist. A verify script that passes is
+still the script grading its own homework.
+
+If a project seems unreachable, `supabase projects list` is read-only and shows whether it has
+auto-paused, which has been the cause before.
+
+---
+
+## Two lessons that cost real time
+
+**A privilege change is not verified by a read test.** Migration 025's read half was dry-run
+tested and worked; its write half was never exercised until a human clicked Save, by which point
+it was in prod. `insert … on conflict do update` needs **table-level** SELECT, which column
+grants do not satisfy, and it fails as `permission denied for table <t>` — which reads like a
+missing grant and is not.
+
+**A return-type change has the blast radius of every consumer.** 031 changed `close_block`'s
+return type; a verify script declared the old one and `select * into` mapped the new composite
+*positionally*, pushing a `date` into a `uuid` column. PL/pgSQL does not warn. Grep for consumers
+first.
+
+---
+
+## Afterwards
+
+- Copy the file to **both** locations (repo + Drive) and say so.
+- Update `schema/README.md`'s applied-where table and the prod backlog.
+- Update the numbering line in `CLAUDE.md` and `plan-spanneros.md` — next free number, staging
+  state, what prod owes and **in what order** (some must follow others; say which, and say when
+  one is not optional).
+- A durable rule goes in `architecture-spanneros.md` only if it constrains more than one module;
+  otherwise `modules/<surface>.md`. Narrative goes to `history/YYYY-MM.md`.
