@@ -140,6 +140,7 @@ Four false failures in one day, all this mistake:
 | "16 tables have no scope filter" | one **spelling** of the rule, after a refactor legitimately respelled it | accept every valid spelling, or assert the rule's effect |
 | "still takes 20.6 ms" | a **cold cache** on first call; the real figure was 3.2 ms warm | warm it, run twice and use the second, and compare against a **control** (a raw scan of the same table) rather than a constant someone typed |
 | "carries 1.50 logged hours" | "any hours **ever**" — a locked 2021 row no screen can render | scope the question to the window the surface actually renders |
+| "work with no project is refused" | **one of the two ways** it is refused — the gate caught `check_violation`, but the trigger raises P0001 and gets there first, so the exception escaped and aborted the whole run on a correct migration | catch `others` and record the SQLSTATE: assert THAT the write was refused, print HOW |
 
 A gate that cries wolf is one people learn to skip, and then it is not a gate.
 
@@ -198,18 +199,40 @@ Then **confirm from the catalogue, not from the run output** — query `pg_polic
 `information_schema.columns`, `pg_proc` and watch the thing exist. A verify script that passes is
 still the script grading its own homework.
 
+**This is not belt-and-braces.** On 2026-09-18, `supabase db query` applied migration 042, printed
+no error, and had created a second `save_break` overload instead of replacing one *and* left `anon`
+able to execute it. Both were invisible in the run output and obvious in `pg_proc` — two rows where
+there should have been one, and a `has_function_privilege('anon', …)` of true. A clean exit means
+the statements parsed and ran; it says nothing about whether they did what the file claims.
+
 If a project seems unreachable, `supabase projects list` is read-only and shows whether it has
 auto-paused, which has been the cause before.
 
 ---
 
-## Two lessons that cost real time
+## Three lessons that cost real time
 
 **A privilege change is not verified by a read test.** Migration 025's read half was dry-run
 tested and worked; its write half was never exercised until a human clicked Save, by which point
 it was in prod. `insert … on conflict do update` needs **table-level** SELECT, which column
 grants do not satisfy, and it fails as `permission denied for table <t>` — which reads like a
 missing grant and is not.
+
+**`create or replace function` KEYS ON THE SIGNATURE — change the arguments and you have
+created a second function, not replaced one.** Migration 042 added one defaulted argument to
+`save_break` and left 039's version sitting beside it, still enforcing the rule 042 existed to
+lift. PostgREST calls by NAMED arguments and both overloads accepted the same five names, so the
+call was ambiguous; in plain SQL the exact-arity match wins, which is the old one. **And the new
+function was executable by `anon`** — a newly created function is executable by `PUBLIC` by
+default, and the `revoke` that 039 had applied belongs to the OLD signature. That half is silent:
+nothing errors, the function simply becomes reachable without a session.
+
+So: `drop function if exists <old exact signature>` beside the create, and **re-state the grants
+whenever a signature is new** — `revoke all … from public, anon; grant execute … to authenticated,
+service_role;`. **A function's ACL belongs to its signature.** Assert it in the verify script too
+(count the overloads, and check `has_function_privilege('anon', …)`), because neither symptom
+raises. Migration 031 had already written the grant half down — "the grants are re-applied below,
+since they do not survive" — and 042 did not read it.
 
 **A return-type change has the blast radius of every consumer.** 031 changed `close_block`'s
 return type; a verify script declared the old one and `select * into` mapped the new composite
