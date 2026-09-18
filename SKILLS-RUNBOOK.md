@@ -432,6 +432,16 @@ copy is the one that is treated as canonical.
 - **`create or replace` is not the only thing that keys on a name.** Uploading a skill whose
   filename differs from its `name:` frontmatter creates confusion — keep the folder name, the
   `name:` field and the org-settings entry identical.
+- **THERE IS MORE THAN ONE CLONE OF THIS REPO ON THIS MAC.** At least two:
+  `~/.claude/plugins/marketplaces/spanner` (the one the plugin system maintains) and
+  `~/Developer/spanner-claude-marketplace` (a working clone). On 2026-09-18 a skill was edited and
+  committed in the second while the first was six commits ahead — and because that clone predated
+  several merges, `git diff origin/main..HEAD` on it showed **78 files and 61,233 deletions**,
+  almost all of which were simply the commits it was missing. **Diff a commit against its own
+  parent (`git show --stat <sha>`), never against origin, when you want to know what someone
+  actually changed.** The real commit touched three files.
+  **Never force-push from a clone that is behind.** Merging is safe; force-pushing would have
+  deleted the runbook, the export script, and both brand skills with all their assets.
 - **The local marketplace checkout can be behind while the cache is current.** Always `git pull`
   before editing — and for a comparison, do not pull, **clone fresh into a temp directory**. Both
   checkouts on this Mac were behind on 2026-09-18, and diffing one of them produced a confident,

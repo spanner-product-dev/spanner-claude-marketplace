@@ -1,6 +1,6 @@
 ---
 name: spanner-meeting-notes
-description: Generates succinct Spanner meeting notes in Mason's voice from a Granola, Zoom, or Otter transcript and publishes them to the right Notion database, with Slack routing per meeting type. When the author captured screenshots during the call — portal-hotkey captures or their own macOS screenshots — it enriches the notes by matching each screenshot to the moment in the transcript, copying and renaming local screenshots into the portal (or attaching them to Notion) on the way. Use whenever anyone at Spanner asks for meeting notes, a summary, or a write-up — "write up the [meeting]", "summarize the standup/sync/TPL", "publish notes to Notion", "meeting notes with screenshots", "add screenshots to my notes". Screenshots are optional enrichment if they don't exist, not required, but are required if they can be found. When in doubt, use this skill — it knows the source connectors, folder paths, URL patterns, timestamp conventions, and Notion database IDs plain summarization would have to rediscover.
+description: Generates succinct Spanner meeting notes in the author's voice from a Granola, Zoom, or Otter transcript and publishes them to the right Notion database, with Slack routing per meeting type. When the author captured screenshots during the call — portal-hotkey captures or their own macOS screenshots — it enriches the notes by matching each screenshot to the moment in the transcript, copying and renaming local screenshots into the portal (or attaching them to Notion) on the way. Use whenever anyone at Spanner asks for meeting notes, a summary, or a write-up — "write up the [meeting]", "summarize the standup/sync/TPL", "publish notes to Notion", "meeting notes with screenshots", "add screenshots to my notes". Screenshots are optional enrichment if they don't exist, not required, but are required if they can be found. When in doubt, use this skill — it knows the source connectors, folder paths, URL patterns, timestamp conventions, and Notion database IDs plain summarization would have to rediscover.
 ---
 
 # Spanner Meeting Notes
@@ -8,8 +8,8 @@ description: Generates succinct Spanner meeting notes in Mason's voice from a Gr
 Generate meeting notes from a Granola, Zoom, or Otter transcript, publish them to
 the correct Notion database, and post to the right Slack channel when asked.
 
-**Notes are short and sound like the author.** Load the **`mason-voice`** skill
-before composing and keep the page tight — full rules in **Voice and length**
+**Notes are short and sound like the author.** Load the author's voice skill
+(**`mason-voice`** when the author is Mason) before composing and keep the page tight — full rules in **Voice and length**
 below, applied in step 5. This is not a polish pass at the end; it changes what
 you write in the first place.
 
@@ -19,9 +19,11 @@ and either (or neither) may exist for a given meeting:
 - **Portal-hotkey captures** — some teammates run a hotkey that captures a window
   mid-meeting and saves it straight to the portal repo, already web-addressable.
 - **The author's own macOS screenshots** — ordinary ⌘⇧4/⌘⇧5 captures taken during
-  the call, sitting in the user's screenshot folder. These are *not* web
-  addressable, so the skill finds the in-window ones, copies them into the portal
-  (renamed to the portal convention) to give them a URL, then **links** them
+  the call, sitting in a drop folder that is usually **not** one of the session's
+  connected folders. **If a `screenshot-inbox` skill is available in the session,
+  use it to find, stage and read them** — it owns the folder location and the
+  filename traps. These are *not* web addressable, so they get copied into the
+  portal (renamed to the portal convention) to give them a URL, then **linked**
   (blue text) in the notes.
 
 When captures exist for the meeting window, each one is matched to the exact
@@ -106,10 +108,12 @@ without ever listing the folder). Before any such claim reaches the notes:
   My Notes. `search_zoom`/`doc_view: notes` is the check that finds it, and it is
   required, not optional. State which checks you ran when reporting a gap.
 - **Screenshots:** do NOT write "no screenshots" or skip the enrichment steps until
-  you have actually **listed the portal captures folder** `public/screenshots/<YYYY-MM>/`
-  (and, when relevant, the user's macOS screenshot folder) for the meeting window and
-  parsed the timestamps. Absence must be proven by a directory listing, never inferred
-  from which transcript source you happened to use.
+  you have listed, this run, **both** the portal captures folder
+  `public/screenshots/<YYYY-MM>/` **and the author's screenshot drop folder** —
+  requesting access to the drop folder first, because it is usually not connected.
+  **The session's connected-folder list is not an answer to this question.** A folder
+  you did not list is not a folder you checked. Name in Sources every folder you
+  actually listed, and say plainly which ones you could not reach.
 - **Statuses / sources:** don't leave an action item "Unknown," or claim a link/doc
   doesn't exist, until you've run the Slack → Gmail → matrix → prior-notes checks in
   Step 6. "I didn't find it" is only valid *after* looking.
@@ -173,12 +177,12 @@ missing and ask them to paste an export rather than guessing at content.
 | Portal filename convention | `YYYYMMDD-HHMMSS-label.png` — **Pacific time** (e.g. `20260605-153541-meeting.png` = 3:35:41 PM PT) |
 | Live URL pattern | `https://spanneros-wip.pages.dev/screenshots/YYYY-MM/<filename>` |
 | Portal SSO | The portal is behind Cloudflare Access — image embeds in Notion may not render for Notion's proxy even though links work for the team in a browser |
-| Local macOS screenshot folder (per-user) | Resolve in order: (1) `defaults read com.apple.screencapture location`; (2) the user's configured/known folder; (3) `~/Desktop` (macOS default). The user can also just name it or paste files. Known configs — Mason: `~/Documents/Screenshots`. |
+| Author's screenshot drop folder (per-user) | **Prefer the `screenshot-inbox` skill** when the session has one — it resolves the folder and handles staging. Otherwise resolve in order: (1) `defaults read com.apple.screencapture location`; (2) list `~/Documents` and `~/Desktop` and check **every** folder whose name contains "Screenshot" — the drop folder is often a second one beside the default and is usually not connected; (3) `~/Desktop`. The author can also name it or paste files. A folder counts as checked only once listed this run. |
 | macOS screenshot filename | `Screenshot YYYY-MM-DD at H.MM.SS AM/PM.png` — **Pacific local wall-clock**, 12-hour, unpadded hour, dot separators (e.g. `Screenshot 2026-07-13 at 11.36.33 AM.png` = 11:36:33 AM PT). If a name is unparseable, fall back to the file's modification time. |
-| Local transcripts folder (per-user) | Mason: the connected **Transcripts** Google Drive folder. Fresh Zoom/Otter exports may arrive as `transcript.txt` / `transcript1.txt` or a raw export name. |
+| Local transcripts folder (per-user) | Resolve from the session's connected folders — a folder named **Transcripts** or similar (Mason's is a connected Google Drive folder). Fresh Zoom/Otter exports may arrive as `transcript.txt` / `transcript1.txt` or a raw export name. |
 | Transcript filename convention | `YYMMDD-HHMM_Meeting_Name.txt` — 2-digit year, 24-hour **Pacific** start time, underscores in the name (e.g. `260717-1300_TPL_Sync.txt`, `260713-1030_SpannerOS_Standup.txt`). Rename any generically-named export to this before finishing. |
 
-If the repo folder isn't mounted, request it via `request_cowork_directory` with
+If the repo folder isn't mounted, request it via `device_request_folder_access` with
 path `~/Developer/spanner-internal-website`. If the user doesn't have that repo
 or hasn't set up capture, **skip screenshots entirely and continue** — this is
 expected, not a failure. Old screenshots (pre Jun 5 2026, names like
@@ -307,12 +311,13 @@ folder are named.
 
 ### 2. Find in-window screenshots
 
-**Mount both folders first.** The portal repo
-(`~/Developer/spanner-internal-website`) and the author's local screenshot folder
-(e.g. `~/Documents/Screenshots`) may each need mounting via
-`request_cowork_directory` before you can open images: `Glob` can *list* files in
-an unmounted path, but `Read` cannot open them until the folder is connected.
-Request both, then list and read.
+**Get both folders reachable first.** The portal repo
+(`~/Developer/spanner-internal-website`) and the author's screenshot drop folder
+may each need connecting via `device_request_folder_access` before you can open
+images: a path can be *listed* while unmounted, but `Read` cannot open it until
+the folder is granted. Request both, then list and read. Access has been granted
+on every request so far — asking costs one call, and skipping it is how a meeting
+gets written up with "no screenshots" while five sit in the drop folder.
 
 
 Gather from both possible sources; use whichever exist. In all cases, "in window"
@@ -323,11 +328,11 @@ URL/file or mentioned "the screenshot I just took," include it regardless.
 each filename's `YYYYMMDD-HHMMSS` timestamp as Pacific wall-clock. Keep files
 inside the window. Already web-addressable — no import needed.
 
-**b) The author's own macOS screenshots.** Resolve the user's local screenshot
-folder (detection order in the infra table; ask or accept a pasted path if
-unsure). List it and parse each `Screenshot YYYY-MM-DD at H.MM.SS AM/PM.png`
-name as Pacific local wall-clock (fall back to file mtime for odd names). Keep
-files inside the window.
+**b) The author's own screenshots.** **Use the `screenshot-inbox` skill if the
+session has one** — it knows the drop folder and the staging quirks. Otherwise
+resolve the folder per the infra table. Either way, list it and parse each
+`Screenshot YYYY-MM-DD at H.MM.SS AM/PM.png` name as Pacific local wall-clock
+(fall back to file mtime for odd names). Keep files inside the window.
 
 **c) Screenshots pasted into Slack.** The author may have pasted captures into the
 meeting's channel instead of capturing to the portal — check the routed Slack
@@ -344,7 +349,25 @@ exist.
 ### 2b. Import local screenshots (copy → rename → publish)
 
 macOS screenshots aren't web-addressable, so before they can be linked, import
-each in-window local screenshot found in step 2(b):
+each in-window local screenshot found in step 2(b).
+
+**The filename trap, before anything else.** macOS puts a narrow no-break space
+(U+202F) before AM/PM. `device_list_dir` renders it as an ordinary space, so any
+name copied out of a listing fails with "does not exist" — which reads like the
+file is gone. **Never retype one.** In `device_bash`, match it with `grep -F` on
+the time fragment and let the shell supply the real name:
+
+```bash
+for t in 1.11.44 1.13.08; do
+  f=$(ls "$SRC" | grep -F "2026-09-18 at $t")
+  cp -n "$SRC/$f" "$DST/20260918-<hhmmss>-<slug>.png"
+done
+```
+
+Copying straight to the portal name also solves staging: the portal name is
+space-free, so `device_stage_files` on the **portal copy** works where it fails on
+the original. Import and staging in one pass.
+
 
 1. **Copy** it into `~/Developer/spanner-internal-website/public/screenshots/<YYYY-MM>/`
    (create the month folder if missing).
@@ -354,10 +377,16 @@ each in-window local screenshot found in step 2(b):
    overwrite: if the target name already exists, append `-2`, `-3`, … Keep a map
    of {original file → new portal filename} so captions and correlation use the
    parsed time.
-3. **Publish.** Once the portal deploys (the repo's normal auto-deploy/watcher, or
-   the `spanner-internal-deploy` skill), each imported shot is live at
+3. **Publish, then check the deploy before calling the link live.** Once the portal
+   deploys (the repo's normal auto-deploy/watcher, or the `spanner-internal-deploy`
+   skill), each imported shot is live at
    `https://spanneros-wip.pages.dev/screenshots/<YYYY-MM>/<newname>` — **link** to
    that URL (blue text) exactly like the hotkey captures. Do not embed.
+   **Run `git log --oneline -1 -- <that file>` in the portal repo first.** If the
+   content sync has swept it up, say "live now" in Sources; if not, link it anyway
+   (it resolves with no edit once the pipeline runs) but say it goes live at the
+   next sync. Never assert either state without checking — dead links have been
+   published before.
 4. **Fail gracefully.** If the portal repo isn't mounted, or the user would rather
    not deploy personal screenshots to the portal, **attach the image directly to
    the Notion page instead** via `notion-create-attachment` — that renders in
@@ -370,7 +399,14 @@ each in-window local screenshot found in step 2(b):
 Read each image with the Read tool (the local original is fine — read before or
 after the copy). Knowing what's actually pictured is the point — a resourcing
 dashboard, a CAD view, a Slack thread — and it often corrects ambiguous
-transcript references ("this number here"). This is also the filter: a personal
+transcript references ("this number here").
+
+**Read any notes block on the sheet itself, not just the numbers.** Forecast and
+planner captures often carry a "Notes for week of …" block the author typed during
+the call, and it routinely settles what the transcript garbled — a new client or
+program name, whether an hours change actually landed, who is picking something up.
+Check it before hedging a name or leaving an open question; the answer is often
+already on screen. This is also the filter: a personal
 macOS screenshot folder may hold in-window shots that have nothing to do with the
 meeting — if a shot's content clearly doesn't match the discussion, drop it (and
 don't import it in 2b).
@@ -419,16 +455,25 @@ action items):
 # Key Outcomes
 # Decisions
 # <topic sections as needed>
-## During this discussion the team reviewed:  ← screenshot goes here (if any)
+<capture link + one-line italic caption, inside the topic section it informs>
 # Action Items (see 4-column table format below)
 # Sources
 ```
 
-When screenshots exist, place each inside the topic section it belongs to. The
-caption is a single **italic header line** (capture time + what the sheet is +
-context) followed by the on-sheet notes **broken out as one bullet per line** —
-mirror how the source sheet lays them out; never collapse them into one inline
-run-on sentence with semicolons. E.g.:
+When screenshots exist, place each inside the topic section it belongs to.
+
+**Link it with a short caption — do not transcribe it.** One italic line naming
+what the capture is and when ("*Next Week sheet, 1:12:59 PM*"), and that's the
+whole caption. **Never follow a capture with a bulleted transcription of what it
+shows** — a wall of "Alex 11.75, Alyssa 4.5, Damien 48…" is the sheet read aloud,
+not notes, and Mason rejected exactly that on 2026-09-18.
+
+**What the capture shows belongs in the notes themselves.** Fold the numbers and
+the sheet's notes into the topic sections, Key Outcomes, decisions and action
+items — as findings, in the author's voice, each saying something. "Alex and
+Alyssa go to zero after Sep 21" is a note; "Alex 11.75, then nothing — 52.25
+total" is a transcription. Say each number once, where it carries weight, and let
+the linked capture be the backup for anyone who wants the raw sheet.
 
 
 
@@ -446,7 +491,7 @@ Apply `<span color="blue">…</span>` to every capture link — in the topic sec
 Action Item notes, and in Sources. Keep the URL a plain browser link (works for
 signed-in team members). If the author specifically wants an image that renders
 inline for everyone, the only reliable path is a native Notion upload (copy the PNG
-somewhere they can reach and hand it over via `present_files` to drag in) — but the
+somewhere they can reach and hand it over via `SendUserFile` to drag in) — but the
 default is a blue link, not an embed.
 
 **Action items — 5-column Notion table + two carry-over tables.** Render action
