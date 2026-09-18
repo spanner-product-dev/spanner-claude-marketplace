@@ -83,26 +83,30 @@ deployed. **Deployment is the separate dropdown** on the right of each row:
 
 Do not skip this. Several steps below only make sense once you know what you are fixing.
 
-### Problem A — two sources of truth, on two different GitHub accounts
+### Problem A — two source repos ✅ RESOLVED 2026-09-18
 
-There are **two** marketplaces feeding Spanner skills:
+**This section originally said the brand skills lived on a personal GitHub account and called it
+the highest-priority item. That was wrong twice over, and both errors are worth keeping here
+because they are the kind you will make too.**
 
-| Marketplace | GitHub repo | Owned by |
-|---|---|---|
-| `spanner` | `spanner-product-dev/spanner-claude-marketplace` | **the org** ✅ |
-| `spanner-plugins` | `mcspan/spanner-plugins` | **Mason personally** ⚠️ |
+**Error 1 — the account.** The second marketplace pointed at `mcspan/spanner-plugins`, which reads
+like a personal repo. It had already been **transferred to the org**; GitHub silently redirects the
+old path, so every tool kept resolving it and nothing revealed the move. It is
+`spanner-product-dev/spanner-plugins`, private, org-owned. No bus factor. *Check where a repo
+actually lives before calling it a risk — a redirect will happily lie to you by omission.*
 
-The personal one holds four skills, two of which also exist in the org repo:
+**Error 2 — the drift.** This section claimed `spanner-design-loop` had already drifted between the
+two repos, 262 lines versus 274. It had not. **The measurement was taken against a local clone that
+was two commits behind origin** — the exact trap §11 of this file warns about, walked into while
+writing §11. Against a fresh clone all four skills were byte-identical. *A diff is only as current
+as the checkout under it.*
 
-| Skill | In org repo | In personal repo | State |
-|---|---|---|---|
-| `spanner-brand-visual` | — | ✅ | **only copy is in a personal account** |
-| `spanner-brand-voice` | — | ✅ | **only copy is in a personal account** |
-| `spanner-design-loop` | ✅ 274 lines | ✅ 262 lines | **two sources, already drifted** |
-| `spanner-internal-deploy` | ✅ | ✅ | two sources, identical today |
+**What was actually true:** `spanner-brand-visual` and `spanner-brand-voice` existed only in the
+second repo, so the marketplace repo could not have been the single source of truth. Both have now
+been imported into `plugins/spanner-toolkit/skills/`, bringing it to 14 skills.
 
-`spanner-brand-visual` and `spanner-brand-voice` are used across the company and exist only in one
-person's private GitHub. That is the highest-priority item in this document.
+**Still to do:** retire the second marketplace. `spanner-design-loop` and `spanner-internal-deploy`
+remain in both repos — identical today, free to diverge tomorrow. See Part 1.
 
 ### Problem B — two org skills are out of date, one of them harmfully
 
@@ -144,67 +148,37 @@ When you are done:
 
 **Goal:** move the four brand skills into the org repo so there is one place to edit them.
 
-### 1.1 Get both repos current
+**1.1–1.3 were done on 2026-09-18.** `spanner-brand-visual` and `spanner-brand-voice` are now in
+`plugins/spanner-toolkit/skills/`. What follows is what remains.
+
+> **Never diff against a local marketplace checkout.** They sit behind origin routinely — the
+> `spanner` one was 18 commits behind, the `spanner-plugins` one two behind, and the second of those
+> produced a drift report in this very file that was pure fiction. **Clone fresh into a temp
+> directory and diff that.** And never edit anything under `~/.claude/plugins/cache/`; it is
+> overwritten without warning.
 
 ```bash
-cd ~/.claude/plugins/marketplaces/spanner && git checkout main && git pull --ff-only origin main
+cd $(mktemp -d) && gh repo clone spanner-product-dev/spanner-plugins && ls spanner-plugins/spanner-brand/skills
 ```
 
-```bash
-cd ~/.claude/plugins/marketplaces/spanner-plugins && git checkout main && git pull --ff-only origin main
-```
+### 1.4 Retire the second marketplace
 
-> **Trap:** these local checkouts can sit **behind** origin while the plugin *cache* is current — on
-> 2026-09-18 the `spanner` checkout was 18 commits behind and editing it would have silently
-> reverted a rewrite. Always pull first. Never edit anything under
-> `~/.claude/plugins/cache/` — that folder is overwritten without warning.
+`spanner-design-loop` and `spanner-internal-deploy` still exist in **both** repos. Identical today,
+free to diverge tomorrow — and a duplicate nobody is watching is how the shadcn error survived four
+months. Remove them from `spanner-product-dev/spanner-plugins` so the marketplace repo is the only
+copy, or archive that repo entirely.
 
-### 1.2 Compare the two copies of the skills that exist in both
+**Order matters:** confirm the skills are in the marketplace repo's `main` *first*. The local clone
+of `spanner-plugins` is already gone — it disappeared when the marketplace was disconnected on
+2026-09-18, taking the only local copies with it. The repo held them, but do not rely on that
+happening again.
 
-```bash
-diff ~/.claude/plugins/marketplaces/spanner-plugins/spanner-brand/skills/spanner-design-loop/SKILL.md \
-     ~/.claude/plugins/marketplaces/spanner/plugins/spanner-toolkit/skills/spanner-design-loop/SKILL.md
-```
+### 1.5 Remove the plugin from org settings
 
-Read the diff and decide which is correct — **do not assume the longer one wins.** Ask Mason if it
-is not obvious. Repeat for `spanner-internal-deploy` (identical as of 2026-09-18, so expect no
-output).
+claude.ai → **Organization settings → Plugins** → remove the *Spanner brand* plugin.
 
-### 1.3 Copy the two brand skills into the org repo
-
-```bash
-cd ~/.claude/plugins/marketplaces/spanner && git checkout -b chore/absorb-brand-skills
-```
-
-```bash
-cp -R ~/.claude/plugins/marketplaces/spanner-plugins/spanner-brand/skills/spanner-brand-visual \
-      ~/.claude/plugins/marketplaces/spanner-plugins/spanner-brand/skills/spanner-brand-voice \
-      ~/.claude/plugins/marketplaces/spanner/plugins/spanner-toolkit/skills/
-```
-
-If step 1.2 showed the personal copy of `spanner-design-loop` is the better one, copy it across too.
-
-### 1.4 Commit, push, PR, merge
-
-```bash
-cd ~/.claude/plugins/marketplaces/spanner && git add -A && git commit -m "chore: absorb the brand skills from the personal marketplace" && git push -u origin chore/absorb-brand-skills
-```
-
-```bash
-cd ~/.claude/plugins/marketplaces/spanner && gh pr create --fill && gh pr merge --squash --delete-branch
-```
-
-### 1.5 Retire the personal marketplace — LAST, and not before the merge
-
-Only once the skills are safely in the org repo. In claude.ai → **Organization settings → Plugins**,
-remove the *Spanner brand* plugin. Then on the Mac:
-
-```bash
-rm -rf ~/.claude/plugins/marketplaces/spanner-plugins
-```
-
-**Do not delete the GitHub repo `mcspan/spanner-plugins`.** Leave it as a dormant backup for a few
-months. Add a line to its README saying it has moved, so nobody edits it by mistake.
+**Do not delete `spanner-product-dev/spanner-plugins` on GitHub.** Archive it, and put a line in its
+README saying where the skills went, so nobody edits it by mistake.
 
 ---
 
@@ -406,7 +380,8 @@ Fully quit and reopen Claude Code (and the desktop app) so plugin and settings c
 | Item | Verdict | Action |
 |---|---|---|
 | `~/Documents/spanner-skills-for-org-settings/` | **Obsolete.** A hand-made export that became a fourth copy. Already deleted 2026-09-18. | If it reappears, delete it. Use `dist/org-settings` instead. |
-| `~/.claude/plugins/marketplaces/spanner-plugins/` | **Obsolete after Part 1.** | `rm -rf` the local clone. Keep the GitHub repo dormant as a backup; add a "moved" note to its README. |
+| `~/.claude/plugins/marketplaces/spanner-plugins/` | **Already gone** — removed when the marketplace was disconnected 2026-09-18. | Nothing to do. Note it took the only local copies of two skills with it; the repo had them, but that was luck, not design. |
+| `spanner-product-dev/spanner-plugins` (the repo) | **Obsolete once Part 1.4 is done.** | Archive on GitHub; do not delete. Add a "moved" note to its README. |
 | `plugins/spanner-security/skills/` | **Obsolete after Part 2.** | Removed by `git rm`; the skill lives in the org library. |
 | `../ROLLOUT.md` (referenced by README) | **Does not exist.** | Write it or drop the reference. |
 | `install-spanner-security.sh` | **Keep** — but only if you keep deploying the hook by managed settings. | If you register the plugin in the org library instead (5.2), this becomes obsolete; delete it then and say so in the README. |
@@ -445,7 +420,13 @@ copy is the one that is treated as canonical.
   filename differs from its `name:` frontmatter creates confusion — keep the folder name, the
   `name:` field and the org-settings entry identical.
 - **The local marketplace checkout can be behind while the cache is current.** Always `git pull`
-  before editing. The cache being right is not evidence the checkout is.
+  before editing — and for a comparison, do not pull, **clone fresh into a temp directory**. Both
+  checkouts on this Mac were behind on 2026-09-18, and diffing one of them produced a confident,
+  entirely false report of drift that was written into this document before it was caught.
+- **A GitHub redirect hides a repo transfer.** `mcspan/spanner-plugins` resolves fine and has for
+  months; the repo has actually been `spanner-product-dev/spanner-plugins` for some time. Tools
+  follow the redirect silently. Check `gh repo view <path> --json nameWithOwner` before drawing any
+  conclusion about who owns something.
 - **Never edit `~/.claude/plugins/cache/`.** It is replaced silently on auto-update.
 - **Replace, do not Delete-then-Add**, or you lose the access tier without a warning.
 - **`references/` content does not travel with `SKILL.md` alone.** Three skills carry one, and for
