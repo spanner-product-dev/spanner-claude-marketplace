@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 813.16 170.95" role="img" aria-label="Spanner">
+<title>Spanner</title>
+<style>svg:root{color:#06A6ED}</style>
+<!--
+  Spanner wordmark - Azure - 2026 file set.
+  Geometry is the 2024 Azure artwork, unmodified: the same seven curves, translated into a
+  viewBox cropped to the ink. Nothing was redrawn and no colour was re-sampled.
+
+  viewBox 0 0 813.16 170.95 - the artwork exactly, no padding.
+    The 2024 re-export inherited a padded artboard from the 2015 Blue export it was
+    recoloured from (viewBox 0 0 965.951 275.986 around this same 813.16 x 170.95 artwork),
+    so ink filled only 61.9% of the declared height and height:45px rendered a 27.9px
+    wordmark. The 2015 EPS and PNG files never had this problem; the 2024 SVG and its PNG
+    renders did. This set has it in no file.
+
+  No width/height attributes - CSS, or the placing application, always decides the size.
+    The 2024 SVG carried width="965.951px" height="275.986px", which becomes an intrinsic
+    size that wins in <img>, in Slides/PowerPoint import, and on paste into Office.
+
+  Colour via fill="currentColor", default set in svg:root above.
+    :root matches this <svg> only when the file IS the document - opened alone, or loaded
+    through <img> - so standalone it renders Azure #06A6ED. Inlined into HTML the root is
+    <html>, the rule matches nothing, and `color` inherits normally, from the <svg> itself
+    or any ancestor:
+        <svg ... style="height:30px;width:auto;color:#fff">    white on navy
+        <div style="color:#293A49"> <svg .../> </div>          navy on light
+    One consequence: inlined on a page that sets no colour at all, this inherits the page
+    text colour and renders black. Set `color` wherever you place it.
+
+  SIZING - the one constant worth knowing:
+    `height` is the FULL ink, which includes the descender of the p.
+    The letter body - what reads as the size of the logo - is 0.740 x height,
+    and the baseline sits 0.260 x height above the bottom edge.
+    The s07 header lockup's 30px box therefore gives 22.2px letters.
+
+  If this is ever re-exported from Illustrator: crop the artboard to the artwork before
+  saving, then delete the width and height attributes. Do not re-pad it.
+-->
+<g fill="currentColor" transform="translate(-77.63 -61.11)">
+<path d="M572.759,187.32h-21.136v-76.703c0-8.674-2.963-15.602-8.826-20.589 c-5.364-4.575-13.002-7.195-20.941-7.195c-14.489,0-29.104,8.59-29.104,27.784v76.754h-21.132v-76.754 c0-15.248,5.575-28.12,16.124-37.215c9.075-7.827,21.186-12.138,34.112-12.138c25.293,0,50.903,16.95,50.903,49.353V187.32z"/>
+<path d="M684.448,187.32h-21.136v-76.703c0-8.674-2.967-15.602-8.827-20.589 c-5.364-4.575-13.002-7.195-20.942-7.195c-14.489,0-29.101,8.59-29.101,27.784v76.754h-21.134v-76.754 c0-15.248,5.573-28.12,16.121-37.215c9.076-7.827,21.188-12.138,34.113-12.138c25.293,0,50.905,16.95,50.905,49.353V187.32z"/>
+<path d="M852.521,187.386h-21.26v-71.688c0-20.265,12.543-54.556,59.528-54.556v20.997 c-37.691,0-38.269,27.88-38.269,33.559V187.386z"/>
+<path d="M258.583,61.111c-34.286,0-62.184,27.25-63.266,61.272h-0.051v109.674h21.216V176.61 c0.003-1.514,1.554-3.118,3.755-2.055c10.649,7.623,24.687,13.181,38.346,13.181c34.966,0,63.313-28.341,63.313-63.31 C321.897,89.456,293.55,61.111,258.583,61.111z M258.874,166.944c-23.202,0-42.012-18.806-42.012-42.01 c0-23.201,18.811-42.01,42.012-42.01c23.204,0,42.014,18.809,42.014,42.01C300.888,148.138,282.078,166.944,258.874,166.944z"/>
+<path d="M460.001,122.383c-1.083-34.023-28.981-61.272-63.266-61.272c-34.967,0-63.314,28.345-63.314,63.315 c0,34.969,28.347,63.31,63.314,63.31c13.643,0,27.661-5.542,38.306-13.152c2.1-1.07,3.606,0.298,3.796,1.735v11.014h21.216v-64.95 H460.001z M396.443,166.944c-23.203,0-42.013-18.806-42.013-42.01c0-23.201,18.81-42.01,42.013-42.01 c23.203,0,42.012,18.809,42.012,42.01C438.456,148.138,419.646,166.944,396.443,166.944z"/>
+<path d="M756.234,168.46c-20.442,0-34.448-10.403-39.725-28.432c-0.608-3.146,1.932-3.675,3.661-3.757h92.026 v-0.036c7.008,0,8.572-0.729,8.485-8.01c0.019,0,0.032,0,0.049,0c-0.057-2.369-0.12-4.27-0.12-4.27 c-0.146-34.795-27.731-62.119-62.473-62.119c-35.093,0-63.647,28.346-63.647,63.19c0,34.84,28.555,63.185,63.647,63.185 c18.724,0,36.42-8.129,48.536-22.305l-15.729-13.388C782.279,162.65,769.631,168.46,756.234,168.46z M716.615,111.19 c5.287-18.307,20.882-28.905,41.523-28.905c19.906,0,34.471,9.871,40.16,26.976h-0.002c0,0,0.009,0.022,0.024,0.064 c0.034,0.107,0.075,0.216,0.107,0.325c0.37,1.19,1.242,4.792-1.666,5.26h-78.132C716.584,114.581,716.408,112.698,716.615,111.19z"/>
+<path d="M165.815,121.035c-9.249-4.466-18.616-5.222-27.675-5.954c-1.502-0.122-3.012-0.244-4.437-0.376 l-1.661-0.167c-2.014-0.188-4.019-0.333-6.006-0.477c-7.147-0.513-13.32-0.958-18.42-3.421 c-4.979-2.406-7.094-8.424-5.029-14.307c2.25-6.406,14.312-12.008,23.734-13.032c15.662-1.699,31.113,4.011,39.354,14.557 l17.497-12.888c-13.02-16.662-35.743-25.424-59.292-22.859c-16.265,1.764-36.37,11.073-42.081,27.342 c-5.656,16.113,1.084,33.051,16.032,40.279c8.963,4.327,17.92,4.971,26.583,5.596c1.829,0.131,3.672,0.263,5.438,0.428 l1.663,0.167c1.607,0.15,3.21,0.28,4.804,0.409c7.637,0.617,14.232,1.148,19.71,3.794c4.978,2.405,7.091,8.421,5.027,14.305 c-2.249,6.405-14.312,12.009-23.734,13.031c-14.759,1.604-33.386-3.481-41.938-18.411l-17.759,12.727 c10.606,16.488,29.803,26.552,51.365,27.283c3.535,0.119,7.138-0.011,10.772-0.407c16.264-1.765,36.37-11.073,42.082-27.341 C187.503,145.195,180.762,128.256,165.815,121.035z"/>
+</g>
+</svg>
