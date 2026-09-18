@@ -65,6 +65,13 @@ Supabase is the database and auth for all projects.
 **Keys**
 - The `service_role` key bypasses RLS — it lives **only** in server-side environments, never in client code, never in the browser bundle, never in the repo.
 - The `anon` key is the only key allowed client-side, and it relies on RLS for protection.
+
+**Database functions — a function's grants belong to its SIGNATURE**
+- **A newly created Postgres function is executable by `PUBLIC`, and `anon` is in `PUBLIC`.** Every function needs `revoke all … from public, anon;` then `grant execute … to authenticated, service_role;` — never left at the default.
+- **`create or replace function` keys on the signature.** Change the arguments and you have created a *new* function, not replaced one: the old survives beside it, and the new one starts permissive with none of the revokes the old signature carried. Drop the old exact signature, and re-state the grants.
+- **The failure is silent** — nothing errors, no policy is violated, the function is simply reachable without a session. Happened on SpannerOS staging 2026-09-18 (migration `042`, `save_break`), invisible in the apply output, found by querying `pg_proc`.
+- **A `security definer` function bypasses RLS**, so its own checks are its only gate; one that silently becomes `anon`-executable is an unauthenticated path past RLS. Always set `search_path`.
+- **Verify from `pg_catalog`, not the migration output** — count overloads, check `has_function_privilege('anon', …)`.
 - Rotate keys on any suspected exposure.
 
 **Encryption**
@@ -104,6 +111,7 @@ Run top to bottom before writing feature code. Claude follows this automatically
 - [ ] Supabase Auth wired (no custom auth)
 - [ ] **RLS enabled on every data table in the first migration; deny-by-default policies written**
 - [ ] `service_role` key server-side only; `anon` key the only client key
+- [ ] **Every DB function: `anon` revoked, `authenticated` granted — re-checked in `pg_proc` after any signature change**
 - [ ] Server-side authorization checks on every data-returning endpoint
 - [ ] Field-level encryption planned for any SSN / financial / gov-ID data
 
