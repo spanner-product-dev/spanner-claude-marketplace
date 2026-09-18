@@ -6,8 +6,8 @@ A Claude Code plugin marketplace for Spanner Product Development. Publish this d
 | Plugin | What it does |
 |---|---|
 | `spanner-security` | Spanner's secure-by-default engineering standard as an always-on skill. |
-| `spanner-toolkit` | Spanner's working skill set for Claude Code — project setup, Apps Script/clasp guardrails, SpannerOS migrations/CRUD scaffolding, Torque UI, design loop, operating model, portal deploy, domain/SSL/DNS, weekly digest, matrix sync, meeting notes. |
-| `spanner-project-launch` | Automates the BD-to-PD Launch Checklist — Notion tracker entry, planner + exec deck (via planner scripts), Drive folders, Slack, Calendar, email drafts, run logging, and the manual punch list. |
+| ~~`spanner-toolkit`~~ | **Retired as a plugin 2026-09-18** — it was skills only, and every one of its skills is in the claude.ai Skills library. Two copies of the same guidance drift apart; that is how `spanneros-crud-scaffolder` spent four months recommending a UI library the project does not use. **The skill FILES still live at `plugins/spanner-toolkit/skills/` and are still the source of truth** — only the plugin packaging is gone. |
+| ~~`spanner-project-launch`~~ | **Retired as a plugin 2026-09-18**, same reasoning. Its skill is `project-launch` in the Skills library. |
 
 ## Source of truth — read this before editing a skill anywhere else
 
@@ -78,7 +78,19 @@ default instead of making them self-install.
 ```
 
 ## For the org — enforce for everyone (recommended)
-Push the plugin to every machine via Claude Code **managed settings** so no one has to install it by hand. See `../ROLLOUT.md` for the exact file and JSON.
+Push the plugin to every machine via Claude Code **managed settings** so no one has to install it by
+hand. `install-spanner-security.sh` in this repo writes that file; it needs sudo and is run once per
+Mac:
+
+```
+curl -fsSL https://raw.githubusercontent.com/spanner-product-dev/spanner-claude-marketplace/main/install-spanner-security.sh | sudo bash
+```
+
+**That reaches only the Macs it is run on.** The alternative, which needs nobody's terminal, is to
+register this marketplace under claude.ai → Organization settings → Plugins → *Organization library*
+and set `spanner-security` to **Required**. Prefer that. See `SKILLS-RUNBOOK.md` §8.2 — as of
+2026-09-18 the secret gate is confirmed on exactly one machine, which is not what the security
+standard claims.
 
 ## For a single repo — enable per-project
 Commit a `.claude/settings.json` to the repo:

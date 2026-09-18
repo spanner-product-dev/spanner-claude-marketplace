@@ -186,16 +186,24 @@ README saying where the skills went, so nobody edits it by mistake.
 
 **Goal:** stop shipping skills-only plugins that duplicate the Skills library.
 
-### 2.1 Remove the skills-only plugins from the marketplace manifest
+### 2.1 Remove the skills-only plugins from the marketplace manifest ✅ DONE 2026-09-18
 
-Edit `.claude-plugin/marketplace.json` and delete the `spanner-toolkit` and
-`spanner-project-launch` entries from the `plugins` array. **Leave `spanner-security`.**
+**This is a file in this repo, not a screen in claude.ai** — the original wording did not say so,
+which is a fair thing to be stuck on. The file is:
+
+```
+~/.claude/plugins/marketplaces/spanner/.claude-plugin/marketplace.json
+```
+
+The `plugins` array there listed three entries; it now lists one, `spanner-security`. Deleting an
+entry stops the plugin being installable — **it does not delete the skill files**, which stay at
+`plugins/<name>/skills/` and remain the source of truth for the org-settings uploads.
 
 **Leave the folders under `plugins/` alone.** The skills still live there and
 `scripts/export-skills-for-org.sh` still reads them. You are only stopping them being *installable
 as plugins*.
 
-### 2.2 Make the security plugin hooks-only
+### 2.2 Make the security plugin hooks-only ✅ DONE 2026-09-18
 
 `spanner-security` currently contains both the hook and a copy of `spanner-security-standard`. The
 skill belongs in the Skills library; the plugin should do one job.
@@ -208,7 +216,7 @@ cd ~/.claude/plugins/marketplaces/spanner && git rm -r plugins/spanner-security/
 > Published, set to Required). If it is not, upload it first — removing it here without that would
 > leave the security standard deployed nowhere.
 
-### 2.3 Fix the dead README link
+### 2.3 Fix the dead README link ✅ DONE 2026-09-18
 
 `README.md` refers to `../ROLLOUT.md`, which does not exist. Either write it or remove the sentence.
 
@@ -230,6 +238,11 @@ went in Part 1.)
 This is the manual part. There is no API for the claude.ai org Skills library today.
 
 ### 3.1 Generate the upload bundle
+
+**The script refuses to run unless you are on `main`, clean, and level with origin.** That is
+deliberate: a warning in a document failed three times in one afternoon, so it is a guard now. If it
+stops you, do what it says — it is almost always `git checkout main && git pull --ff-only origin
+main`. `--force` exists and you should not need it.
 
 ```bash
 cd ~/.claude/plugins/marketplaces/spanner && git checkout main && git pull --ff-only origin main && ./scripts/export-skills-for-org.sh
