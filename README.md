@@ -28,6 +28,10 @@ Everything else is a **publish target**, not a source:
 ./scripts/export-skills-for-org.sh      # regenerates dist/org-settings (gitignored)
 ```
 
+**Setting this up from scratch, or handing it to someone else? Read `SKILLS-RUNBOOK.md`.**
+It is the step-by-step, assumes no prior knowledge of these files, and covers what is
+currently wrong and how to fix it.
+
 **Publishing to org settings is a manual step and will be forgotten.** On 2026-09-18 the
 org-settings copy of `spanneros-schema-migration` was found to be twelve migrations behind, and
 `spanneros-crud-scaffolder` was telling Claude to use shadcn/ui in a project that deliberately has
@@ -40,6 +44,32 @@ contradicts the codebase costs more than no skill at all.
 in Drive, and its own `references/full-standard.md` says that document wins on disagreement. So a
 security change goes **Drive first, then here, then org settings** — three hops, and the reason the
 skill states the precedence in its own text rather than relying on anyone remembering it.
+
+## How many skills to turn on — fewer than you think
+
+**The limit is RECALL, not tokens.** Anthropic's enterprise guidance is explicit: *"limit the
+number of Skills loaded simultaneously to maintain reliable recall accuracy. Each Skill's metadata
+competes for attention in the system prompt. With too many Skills active, Claude may fail to select
+the right Skill or miss relevant ones entirely."* So "it is only a description, leave it on" is the
+wrong instinct — an always-on skill that is rarely relevant makes the relevant ones harder to find.
+
+The documented pattern is **role-based bundles**: keep each person's ACTIVE set small, and let
+everything else be discoverable but off.
+
+| Tier | Skills | Why |
+|---|---|---|
+| **Required** — on, cannot be disabled | `spanner-security-standard` | It is a standard. Its whole value is that nobody has to remember to invoke it, and nobody can opt out. |
+| **Installed by default** — on, removable | `spanner-operating-model`, `spanner-brand-voice`, `spanner-brand-visual` | Everyone answers "how does Spanner work" and everyone writes or reviews something client-facing. Three is a deliberately short list. |
+| **Available to install** — discoverable, off | everything else | Real skills, but role-specific. Someone who never writes a migration should not be carrying `spanneros-schema-migration` in every conversation. |
+
+**Available to install is not a demotion.** It means the skill appears in the directory and a person
+switches it on in one click. The engineering set — `spanneros-crud-scaffolder`,
+`spanneros-schema-migration`, `spanner-apps-script`, `torque-design-language`,
+`spanner-internal-deploy`, `spanner-domain-ssl-dns` — is used by one or two people, so it belongs
+here rather than in everyone's context.
+
+If your plan supports per-group targeting, use it: give the engineering group the build skills by
+default instead of making them self-install.
 
 ## For teammates — install (per user)
 ```
