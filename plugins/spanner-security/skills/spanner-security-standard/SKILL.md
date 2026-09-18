@@ -59,6 +59,7 @@ Run top to bottom before writing feature code. You follow this automatically; hu
 - [ ] Supabase Auth wired (never hand-roll authentication); MFA on, passkeys/authenticator over SMS
 - [ ] **RLS enabled on every data table in the first migration; deny-by-default policies written**
 - [ ] `service_role` key server-side only; `anon` key the only client key
+- [ ] Every DB function: `anon` revoked, `authenticated` granted — **re-check `pg_proc` after any signature change; a new signature starts executable by `PUBLIC`**
 - [ ] Server-side authorization on every data-returning endpoint (verify ownership before returning)
 - [ ] Never join an RLS table to a non-RLS table
 - [ ] Field-level encryption planned for any SSN / financial-account / government-ID data
