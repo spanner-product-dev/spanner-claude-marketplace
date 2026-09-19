@@ -6,6 +6,11 @@ know how Claude skills work, and needs to get this into a good state. No prior k
 **How long:** about 90 minutes end to end. Part 3 (uploading) is the slow bit because it is manual
 clicking, and there is no way around that today.
 
+**How to read a step:** a heading marked **✅ DONE** is history — it says what happened and why, and
+there is nothing to run. A heading marked **⬜ STILL TO DO** is work. If a DONE step still shows you
+a command and you run it anyway, expect it to fail harmlessly; that is the step telling you it is
+already done.
+
 **What you need before you start:**
 
 - Admin (Owner) access to the Spanner Claude organization at [claude.ai](https://claude.ai)
@@ -173,9 +178,9 @@ of `spanner-plugins` is already gone — it disappeared when the marketplace was
 2026-09-18, taking the only local copies with it. The repo held them, but do not rely on that
 happening again.
 
-### 1.5 Remove the plugin from org settings
+### 1.5 Remove the plugin from org settings ✅ DONE 2026-09-18 — nothing to run
 
-claude.ai → **Organization settings → Plugins** → remove the *Spanner brand* plugin.
+The *Spanner brand* plugin was deleted from claude.ai → Organization settings → Plugins.
 
 **Do not delete `spanner-product-dev/spanner-plugins` on GitHub.** Archive it, and put a line in its
 README saying where the skills went, so nobody edits it by mistake.
@@ -203,33 +208,41 @@ entry stops the plugin being installable — **it does not delete the skill file
 `scripts/export-skills-for-org.sh` still reads them. You are only stopping them being *installable
 as plugins*.
 
-### 2.2 Make the security plugin hooks-only ✅ DONE 2026-09-18
+### 2.2 Make the security plugin hooks-only ✅ DONE 2026-09-18 — nothing to run
 
-`spanner-security` currently contains both the hook and a copy of `spanner-security-standard`. The
-skill belongs in the Skills library; the plugin should do one job.
+`plugins/spanner-security/skills/` **was removed** in PR #10. The plugin now carries only its hook;
+the standard's text lives in the Skills library set to **Required**.
 
-```bash
-cd ~/.claude/plugins/marketplaces/spanner && git rm -r plugins/spanner-security/skills
-```
+If you run `git rm -r plugins/spanner-security/skills` today you will get
+`fatal: pathspec … did not match any files`. **That means it is already done, not that something is
+broken.**
 
-> **Before you do this, confirm the skill is live in org settings** (it is, as of 2026-09-18:
-> Published, set to Required). If it is not, upload it first — removing it here without that would
-> leave the security standard deployed nowhere.
+> The check that mattered at the time, recorded for the next person who does this to a different
+> plugin: **confirm the skill is live in org settings before removing it from a plugin.** Removing
+> both copies in one move would leave the security standard deployed nowhere, and nothing would
+> tell you.
 
-### 2.3 Fix the dead README link ✅ DONE 2026-09-18
+### 2.3 Fix the dead README link ✅ DONE 2026-09-18 — nothing to run
 
-`README.md` refers to `../ROLLOUT.md`, which does not exist. Either write it or remove the sentence.
+`README.md` pointed at `../ROLLOUT.md`, which never existed. It now names the real install path
+(`install-spanner-security.sh`) and says plainly that it reaches only the Macs it is run on.
 
-### 2.4 Commit, PR, merge
+### 2.4 Commit, PR, merge ✅ DONE 2026-09-18 — nothing to run
 
-```bash
-cd ~/.claude/plugins/marketplaces/spanner && git add -A && git commit -m "chore: one plugin, for the hook; skills live in the org library" && git push -u origin HEAD && gh pr create --fill && gh pr merge --squash --delete-branch
-```
+Landed as PR #10.
 
-### 2.5 Remove the retired plugins from org settings
+### 2.5 Remove the retired plugins from org settings — ⬜ STILL TO DO
 
-claude.ai → **Organization settings → Plugins** → remove *Spanner project launch*. (*Spanner brand*
-went in Part 1.)
+**This one is a screen, not a file.** claude.ai → **Organization settings** → *Libraries & Access* →
+**Plugins** → find *Spanner project launch* under the **Spanner** heading → **⋮ → Delete**.
+
+*Spanner brand* was deleted this way on 2026-09-18.
+
+The confirmation dialog says *"This permanently deletes the plugin and all of its versions for
+everyone… This can't be undone,"* which is alarming and, here, fine: **every skill in both plugins
+already exists independently in the Skills library.** You are deleting a duplicate, not a
+capability. Check that for yourself before clicking — Skills library, search the skill name — rather
+than taking this file's word for it.
 
 ---
 
