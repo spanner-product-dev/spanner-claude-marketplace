@@ -467,6 +467,13 @@ copy is the one that is treated as canonical.
 - **Replace, do not Delete-then-Add**, or you lose the access tier without a warning.
 - **`references/` content does not travel with `SKILL.md` alone.** Three skills carry one, and for
   `spanner-security-standard` the reference file holds rules the `SKILL.md` only summarises.
+- **Removing a skill from a plugin is a MOVE, not a delete.** The plugin is packaging; the repo
+  is the source of truth. On 2026-09-18 `git rm -r plugins/spanner-security/skills` made the
+  security plugin hooks-only — correct — and deleted the skill's only source in this repo along
+  with a security rule added hours earlier. **Nothing errored.** The export emitted 15 skills
+  where it should have emitted 16, and a count is the only thing that noticed. Skill sources
+  live in `plugins/spanner-toolkit/skills/`, which is no longer a plugin — it is the source
+  directory, and the export globs `plugins/*/skills/*`. **Move, then count what comes out.**
 - **A stale skill is worse than a missing one.** A missing skill makes Claude ask. A stale skill
   makes Claude confidently wrong, and nobody checks a confident answer.
 
