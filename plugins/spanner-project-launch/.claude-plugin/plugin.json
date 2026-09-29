@@ -1,9 +1,15 @@
 {
   "name": "spanner-project-launch",
-  "version": "1.6.0",
+  "version": "1.8.0",
   "description": "Automates the Spanner BD-to-PD Launch Checklist for new projects across Notion, Google Drive, Harvest, Slack, Google Calendar, and Gmail.",
   "author": {
     "name": "Spanner PD"
   },
-  "keywords": ["spanner", "project-launch", "bd-to-pd", "checklist", "automation"]
+  "keywords": [
+    "spanner",
+    "project-launch",
+    "bd-to-pd",
+    "checklist",
+    "automation"
+  ]
 }
