@@ -589,6 +589,7 @@ Format (match the team's existing launch posts):
 
 After the Harvest project exists, create the launch invoice as a **draft** with `create_invoice` (drafts can't be sent
 through the MCP; never send). T&M: the agreement's Deposit. FF: Payment 1.
+**Tin projects have no launch invoice** — skip 6b-0 and 6b for Tin (the Tin checklist has no Launch invoice section).
 - `client_id`: the project's client; `issue_date`: today; `payment_term`: `upon receipt` (agreement Deposit Net 0)
 - `purchase_order`: the PO number
 - `subject`: `Product Development and Engineering | {Project} | Launch Deposit` (prefix `[TEST] ` on test runs)
