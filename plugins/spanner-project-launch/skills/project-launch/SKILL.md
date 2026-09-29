@@ -723,7 +723,8 @@ These IDs are used throughout the automation:
 | Active Projects page | `ed1d7d57705d4767af8af87be34eda8d` |
 | Project Tracker data source | `collection://efb9ea40-a2ae-4130-8d34-4cd0a39c8101` |
 | Program Launch Checklists page | `4eee597dc8c642078d44dbd5fe83d03a` |
-| Launch Checklist template (old 2024 page, now deleted — new checklists come from the Active Projects template button) | `35ace833d8a14c1fb4cc722849914406` |
+| Launch Checklist template (inside the New Program Starter Kit `7584270bccb24ef981788f753d5b7a5c`) | `360222a7d409813c944dd96202b81bce` |
+| Tin Launch Checklist template (Tin client projects) | `2ede8162d2ee4d7280255efa151c657c` |
 | Project rate tracker | `448dc1dfe5c64845904daf600a34eeb6` |
 
 ### Google Drive
