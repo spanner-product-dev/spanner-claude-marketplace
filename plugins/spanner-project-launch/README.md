@@ -7,18 +7,19 @@ Automates the Spanner BD-to-PD Launch Checklist for new projects.
 When you say "launch a new project" or "new project setup", this skill walks through the full BD-to-PD checklist:
 
 1. Creates Notion pages (renames the project page and Launch Checklist, adds the Project Tracker entry, links the checklist under In Progress)
-2. Creates the Project Planner via the template's Apps Script dialog (Budget Forecast Tool folder), then fixes the launch date and TPL the dialog can't set
+2. Creates the Project Planner via the template's Apps Script dialog (launch date, duration and budgets set in the dialog; Budget Forecast Tool folder), sets the TPL, approves the planner's IMPORTRANGE links and loads the Baseline from the proposal
 3. Adds the planner to the __SUMMARY Spanner Forecast ProjectURLs range and approves its IMPORTRANGE link
 4. Generates the Exec Summary deck via Planner → Generate Exec Summary Deck (00__Exec_Summaries folder)
 5. Copies the project folder from the template and adds Program_Management shortcuts (deck, signed agreement) via the Drive website
 6. Archives the signed agreement when provided
-7. Updates the company lists: Future Case Studies sheet, Rates for Active Programs (Notion), DATA STACK Allow access
+7. Updates the company lists: Future Case Studies sheet (append, then sort by client), Rates for Active Programs (Notion), DATA STACK Allow access
 8. Creates the internal Slack channel and drafts/posts the #spanner-team win announcement
 9. Creates Google Calendar exec review and kickoff meetings
 10. Drafts the launch invoice and contractor forecast emails (never sends)
 11. Hands back a punch list; closes out the checklist only when every item is checked
+12. Sets up Harvest through the planner's **🌾 Provision Harvest Project** script (you click Create): only baseline roles with hours become tasks, used baseline rows move to the top, the Harvest ID goes into the planner. Claude checks the result with the Harvest MCP and drafts the launch deposit invoice (drafts only)
 
-It never touches Harvest, the BD Pipeline Bookings/Win sheet, or sends email.
+It never clicks Create in Harvest for you, never sends an invoice or email, and never touches the BD Pipeline Bookings/Win sheet or the ZZ Spanner template projects.
 
 ## Safety
 
@@ -26,6 +27,7 @@ This plugin includes strict safety rules to prevent accidental data loss in Noti
 
 ## Version History
 
+- **1.8.0** — From the 2026-09-29 Sandbox-Mason run (also includes the unreleased 1.7 changes). **Harvest:** new Step 3.5 — agreement facts go in the planner's Harvest Setup tab, the ProjectMaster Provision script creates the project (Harvest tasks = baseline roles with hours plus their NB tasks; used baseline rows moved to the top; payment-terms conflicts must be acknowledged), Claude verifies with the Harvest MCP; new 6b-0 drafts the launch deposit invoice (item type Launch Deposit) and puts paste-ready invoice text in the checklist. Harvest reference IDs and a never-edit-the-templates rule. **Planner:** launch date, duration and budgets set in the setup dialog (so G28 weekOffset is right), B14 weeks check, J1:L1 IMPORTRANGE approval, Baseline loaded from the proposal fee table. **Notion:** all `[Client] | [Project]` subpages renamed, plus a title-only exception for renaming databases inside the new project page. Case-studies list: append then sort instead of inserting a row. Browser notes for the coordinate-free cell edit method and wide viewport.
 - **1.6.0** — From the 2026-09-28 test run. Win announcement moved from email to a #spanner-team Slack post. Launch Log step removed. Added: __SUMMARY ProjectURLs row, planner launch-date/TPL fix, Drive-website shortcuts, signed-agreement archive, company-list updates (case studies, rate tracker, DATA STACK) including on test runs, gated close-out rule, explicit never-do list (Harvest, BD bookings, sending email), Paul dropped from invoice cc, Browser Automation Notes for Google Sheets/Apps Script menus, a Before You Start section (connectors, sign-in, permission prompts), test-run conventions, and troubleshooting for the locked template page and the ProjectMaster library error. The skill is now self-contained — no per-user memory needed to run it.
 - **1.5.0** — Removed all remnants of the old exec-deck template-copy method (template deck ID, obsolete "link deck to planner" and "Dashboard 4" punch-list items) — the deck is generated exclusively via the Planner → Generate Exec Summary Deck script. Added Step 9: every run is logged as a row in the Spanner Project Launch Log Google Sheet.
 - **1.4.0** — Updated Google Drive workflow: project folder is now copied from template folder (including all subfolders and documents); planner destination documented as Budget Forecast Tool folder; exec summary destination documented as 00__Exec_Summaries folder; added exec summary shortcut in Program_Management (manual step).

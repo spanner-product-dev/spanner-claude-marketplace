@@ -7,7 +7,8 @@ description: >
   or any variation of starting the BD-to-PD transition process. Also use when someone asks to
   "automate project setup", "run the launch checklist", or references the BD-PD launch process.
   This skill creates Notion pages, Project Tracker entries, Google Drive folders and templates,
-  the __SUMMARY forecast row, Slack channels and the #spanner-team win post, Google Calendar
+  the __SUMMARY forecast row, the Harvest project (via the planner's Provision script) and draft
+  deposit invoice, Slack channels and the #spanner-team win post, Google Calendar
   meetings, and notification email drafts — then
   provides a punch list for the remaining manual steps.
 ---
@@ -15,12 +16,12 @@ description: >
 # Spanner BD-to-PD Project Launch Automation
 
 This skill automates the BD-to-PD Launch Checklist that Spanner runs for every new project. It handles
-setup across Notion, Google Drive, Slack, Google Calendar, and Gmail, then gives clear instructions
+setup across Notion, Google Drive, Harvest, Slack, Google Calendar, and Gmail, then gives clear instructions
 for the steps that still need a human.
 
 ## Before You Start (read once per session)
 
-**Connectors needed:** Notion, Google Drive, Slack, Google Calendar, Gmail, plus a browser tool
+**Connectors needed:** Notion, Google Drive, Slack, Google Calendar, Gmail, Harvest (MCP), plus a browser tool
 (Claude's built-in browser pane, or Claude in Chrome) for the Google Sheets / Apps Script / Drive
 website steps. If any is missing, say which steps will fall back to the punch list and continue.
 
@@ -36,14 +37,18 @@ was and wasn't written, and carry on with the rest.
 ### Test runs
 
 A test run uses client **Sandbox** (already an option in the Project Tracker) and a project name
-like "Claude Launch Test". Use a real past program's specs as the strawman if the user names one.
-On a test run:
+like "Claude Launch Test". The user may name a variant such as "Sandbox-Mason": use it everywhere
+(page titles, planner, folders, Slack) but set the tracker's Client property to "Sandbox". Use a
+real past program's proposal as the strawman if the user names one — including its fee table for
+the planner baseline (3a step 9). On a test run:
 - Put the person running the skill in every people slot (BD DRI, TPL, Buddy) unless told otherwise.
 - Calendar events: the runner is the only attendee; add "(TEST)" to titles and "TEST — safe to
   delete" to descriptions.
 - Email drafts: addressed only to the runner, subject prefixed `[TEST]`.
 - Slack: make the internal channel **private**; the #spanner-team win post is a **draft only**.
 - Company lists (Step 3f): still written, marked TEST (see 3f).
+- Harvest: set `HARVEST_USE_TEST_COPY=true` so the Provision script uses the COPY templates; invoice drafts get
+  `[TEST]` in the subject and `SANDBOX TEST — DO NOT SEND.` in the notes.
 - End the punch list with a cleanup list of everything created, with links.
 
 ## Important Context
@@ -64,6 +69,10 @@ The checklist has these sections, each detailed below:
 10. Meetings (TPL)
 11. Launch Checklist Complete (TPL)
 
+**Paste-ready text goes where it's used.** Anything the user has to copy into another app (invoice subject,
+description, notes, PO number) goes into the Notion checklist item as `plain text` code blocks. Anything a
+script reads (the agreement facts) goes into the planner. Never make the user open another file to find it.
+
 ---
 
 ## Step 0: Create the Project Page in Notion (Manual — Required First)
@@ -80,6 +89,12 @@ with me and I'll take it from there."
 
 The template page is **locked** — ask the user to unlock the new page (••• menu → Unlock) when
 they create it, or they won't be able to edit or move it later. (Claude's API edits work either way.)
+
+The new page keeps the template's title, **including the `_Template_` prefix** (e.g.
+"_Template_[Client] | [Project] | New Program Starter Kit @today") and the "Template page is Locked"
+callout. That is expected — it is the new instance, not the template. Confirm by checking that it
+sits under Active Projects and was just edited; the real template is linked at the bottom of
+Active Projects ("DO NOT DUPLICATE THIS PAGE") and must never be renamed.
 
 Wait for the user to provide the newly created project page URL. Use `notion-fetch` to read it
 and extract whatever information was pre-populated by the template (title, child pages, etc.).
@@ -102,6 +117,7 @@ the user. You need:
 - **Project name** — the full project name (e.g., "Gigamon | ME Design Support")
 - **Project description** — a brief summary of the project
 - **Program type** — T&M (Time & Materials) or Fixed Fee
+- **Signed agreement and PO** — Drive links (the Harvest setup and deposit invoice are built from them)
 
 ### Batch 2 — People
 - **BD DRI** — the Business Development person responsible (name or email)
@@ -137,10 +153,31 @@ The project page was already created in Step 0 via the Notion template button. N
 Also locate the launch checklist child page. It should have been created by the template
 automatically. Use `notion-fetch` to confirm it exists and save its URL as `CHECKLIST_PAGE_URL`.
 
+**Replace every `[Client]` / `[Project]` placeholder in the project's page tree.** The template
+creates many subpages titled like `[Client] | [Project] | Team & Collaborators`. Find them with
+`notion-search` (query `[Client] [Project]`, `page_url` = the project page, `page_size` 50; run a
+second query `Client Project` to catch "Shared | Client | Project"-style titles). For every result
+whose path is under this project page:
+- **Pages** (`type: page`): rename with `notion-update-page` → `update_properties` → `title`,
+  replacing `[Client]`/`Client` with `{Client}` and `[Project]`/`Project` with `{Project Name}`
+  (e.g. `Shared | {Client} | {Project Name}`).
+- **Databases** (results with `type: block`, e.g. Action Item List, EIL, Meetings and Project Notes,
+  PRD Database, Phase 0 Checklists): rename under the **title-only exception to Safety Rule 1**.
+  For each one: `notion-fetch` it, confirm the project page (`PROJECT_PAGE_URL`) is in its
+  `ancestor-path` and its title contains `[Client]`/`[Project]`, take the `collection://` ID from
+  its `<data-source>` tag, then call `notion-update-data-source` with **only** `data_source_id`
+  and `title` (e.g. `{Client} | {Project Name} | EIL`). Keep the rest of the name as is; the icon
+  is separate and stays. Never pass `statements`, `description`, `in_trash` or `is_inline`.
+  (Proven 2026-09-29 on 5 databases; page templates and schemas were unchanged.)
+- **Leave property names alone**, even ones that contain `Client | Project` (e.g. the relation
+  "Client | Project | EIL"). Renaming them is a schema change and stays forbidden.
+Re-run both searches afterwards and confirm no page or database titles still contain `[Client]`.
+
 ### 2b. Rename the Launch Checklist
 
-Use `notion-update-page` to rename the checklist page:
-- Title: `🚀 {Client} {Project Name} | BD to PD Launch Checklist`
+Use `notion-update-page` to rename the checklist page (it already has the 🚀 icon — don't add
+the emoji to the title):
+- Title: `{Client} | {Project Name} | BD to PD Launch Checklist`
 
 ### 2c. Add to Program Launch Checklists "In Progress" section
 
@@ -223,19 +260,50 @@ The Project Planner template spreadsheet ID is: `1G4igU0bjZiR5xU7-_nT1JuhbC1Dd-u
 4. Click the orange **Click to create a new project** button on the template (same as
    **Planner** menu → **Create New Project...**). A "Project Setup" dialog opens.
 5. Fill the dialog: **Client Name** `{Client}`, **Project Name** `{Project Name}`, **Phase Name**,
-   **Duration (Weeks)**. Text fields accept typed input. The **Launch Date** (native date picker)
-   and **Project Type** select do NOT accept automated input — leave them and fix after creation.
+   **Duration (Weeks)**, **Engineering Budget ($)** and **Materials Budget ($)** from the
+   agreement. Text fields accept typed input (click the field, then `type`).
+   - **Launch Date must be set IN THE DIALOG.** The setup script uses it for more than B15 — in
+     particular it sets the `weekOffset` cell (Sheet1 G28), which shifts the whole weekly chart.
+     Setting B15 after creation leaves G28 wrong. Typing into the native date picker does not
+     work; instead `find` "Launch Date" (the dialog is an iframe — `find`/`read_page` see into it)
+     and use `form_input` on that ref with `YYYY-MM-DD`. If `form_input` doesn't stick, try JS in
+     the dialog frame: set the input's `.value = 'YYYY-MM-DD'` and dispatch `input` and `change`
+     events. Take a screenshot and confirm the date shows before clicking Create.
+     (Not yet proven — first run to try it, report whether it worked.)
+   - **Project Type** select: set it with `form_input` the same way (T&M or Fixed Fee).
+   - If the launch date truly can't be set in the dialog, stop and ask the user to enter it in
+     the dialog themselves before you click Create. Don't create the file and patch B15 later.
 6. Click **Create Project File**, wait ~60s for "Success!", then click **Open Project Now**.
 7. Capture the new planner URL from the tab info.
-8. **Fix the fields the dialog can't set** (see Browser Automation Notes for the cell-edit method):
-   - Named range `dateLaunch` (Sheet1 B15) — defaults to a placeholder date (e.g. 6/1/2026);
-     set it to the launch date.
+8. **Check and fix what the dialog doesn't set** (see Browser Automation Notes for the cell-edit
+   method). Rows 7–24 are a collapsed group — expand it (the `+` left of row 6; click OK on the
+   "Heads up" protection warning) before editing or reading them.
+   - Verify `dateLaunch` (B15) shows the launch date and `weekOffset` (G28) is set. If the chart
+     shows "PLEASE ENTER -1 IN CELL G28" or similar, the date didn't go in through the dialog —
+     tell the user; don't hand-patch.
+   - Named range `weeksInProject` (B14) must equal the agreement's duration in weeks. The
+     dialog's **Duration (Weeks)** field sets it — always fill that field — and fix B14 if it
+     doesn't match (e.g. the duration changed, or the field was left blank).
+   - Also check `engineeringBudget` (B12) and `materialsBudget` (B13) match the agreement.
    - Named range `TPLName` (Sheet1 B8) — defaults to "TPLName"; set it to the TPL's first name
      as used in the __SUMMARY sheet's TPL column (e.g. "Mason", "Damien", "Niall").
-   - Project Type defaults to T&M; for Fixed Fee, tell the user to change it.
-9. **Staffing (optional, only with names/hours from the user)**: load staff in the Baseline
-   and Estimated Forecast sections. Never assign contractors without the user confirming
-   Giles approved.
+   - **Approve the planner's own IMPORTRANGE links: Sheet1 `J1:L1`** ("Sheets Access" row; each
+     shows `#REF!` until approved, and row 4 then reads "Approve Access Above"). Hover each
+     `#REF!` cell and click **Allow access** until all three read TRUE. The cells sit to the right
+     of the frozen columns, so use a wide viewport (Browser Automation Notes).
+9. **Load the Baseline from the proposal's fee table** (Baseline Plan, rows ~36–44; one row per
+   rate/role, week columns start where row 28 shows week `1`, i.e. the launch week):
+   - Map each proposal line to the planner row with the same rate and the closest role
+     (e.g. "Senior Mechanical Engineer $250" → `Sr PD` $250; "Principal / Exec $300" → `PR Exec`).
+     If no row matches the rate, ask the user.
+   - Enter the proposal's avg hrs/wk in each week column for that line's weeks, in sequence
+     (e.g. 105 hrs/wk × 2 wks then 20 hrs/wk × 4 wks → 105,105,20,20,20,20).
+   - Leave the other role rows as they are. Only rows with hours count as "used": they become the Harvest
+     tasks, and the Harvest Create step moves them to the top of the baseline (Step 3.5).
+   - **Verify:** D59 (Weekly Baseline Plan total) must equal the proposal's Engineering Subtotal
+     and D58 the total hours. If not, stop and show the user the difference.
+   - Estimated Forecast staffing (names) only with names from the user. Never assign
+     contractors without the user confirming Giles approved.
 
 After creation, verify the planner is in the Budget Forecast Tool folder (`16b85a8ykDu4tPUDr7sttPuGrw_-zj_om`)
 by checking its metadata with `get_file_metadata`. If it was created elsewhere, tell the user to
@@ -334,8 +402,11 @@ any documents inside them.
       `https://drive.google.com/drive/folders/1h8PP0G6uEZ2PFbbRVN9_g29XvyPCEGx3`).
    2. `find` the file name, click it to select, then right-click the row → **Organize** →
       **Add shortcut** (hover Organize first; find "Add shortcut" to get its ref).
-   3. In the dialog, the new project folder is usually under **Suggested** — double-click it,
-      click the `Program_Management` row, then click that row's **Add** button.
+   3. In the dialog, the new project folder often is NOT under **Suggested**, and typing a
+      folder name into the dialog's search doesn't work. What works: click the search icon, click
+      the "Search folders or paste URL" field, `type` the **Program_Management folder's URL**
+      (`https://drive.google.com/drive/folders/<id>`), press Return, click the one result, then
+      click **Add**. A "Adding shortcut…" toast confirms.
    4. Verify with `search_files` (`parentId = '<Program_Management id>' and mimeType =
       'application/vnd.google-apps.shortcut'`).
    Do this for the Exec Summary deck, and for the signed agreement once it's archived (3e).
@@ -376,14 +447,14 @@ runs** (client "Sandbox"). They are company-wide files, so:
    Rows are alphabetical by Client (col B). Columns: A Priority, B Client, C TPL,
    D Calendar Year, E On SpannerPD Website, F Program(s), G Public Link, H Client ask,
    I What we did, J Notes, K Collateral located.
-   - Find the insert point by reading col B via the name box (Browser Automation Notes).
-   - If the client already has rows, insert after its last row; otherwise before the first
-     client that sorts after it.
-   - Select a cell in the target row, then Insert → Rows → **Insert 1 row above** (JS menu
-     method; menu id `#docs-insert-menu`).
+   - **Don't insert a row.** Add the entry in the first empty row at the bottom of the list
+     (read col B via the name box to find the last filled row), then **sort by Client**:
+     use the filter on the header row (row 3) → Client (col B) → **Sort A → Z**, so the whole
+     filtered table re-sorts together. (Not yet proven — verify after.)
    - Fill B (client), C (TPL first name), D (launch year), F (project name); H if the
      proposal summary is available; J only for test runs. Leave the rest blank.
-   - Fill every cell in the same pass as the row insert so an empty row is never left behind.
+   - Fill the row completely before sorting. After the sort, read col B around the client's
+     alphabetical position and confirm the new row landed there with all its cells intact.
 2. **Project rate tracker** (Notion `448dc1dfe5c64845904daf600a34eeb6`, "Rates for Active
    Programs"). Add one line with the program name under **# Fixed Fee Programs** or the
    current **# T/M … Rates** heading, in alphabetical position, matching the existing style
@@ -392,9 +463,62 @@ runs** (client "Sandbox"). They are company-wide files, so:
    it, find the new planner's `#REF!` cell, hover it and click **Allow access** — same as
    the __SUMMARY sheet in 3a-2.
 
-Status as of v1.6.0: the row insert (item 1) and the __SUMMARY Allow access are proven; filling
-the case-study row, the rate-tracker line and DATA STACK Allow access have not yet completed a
-full run — verify each one after writing and report what you see.
+Status as of v1.7.1 (2026-09-28 Sandbox-Mason run): the case-study row fill, the rate-tracker
+line, DATA STACK Allow access and __SUMMARY Allow access are all proven. The append-then-sort
+method for item 1 is new and not yet proven — verify after writing and report what you see.
+
+---
+
+## Step 3.5: Harvest Setup (script creates, Claude prepares and verifies)
+
+Harvest is created by the **ProjectMaster Provision script** from the planner, never by hand-duplicating
+the template and never by Claude writing projects directly. Claude prepares the inputs and checks the result
+with the **Harvest MCP** (read tools + draft invoices). The user clicks **Create**.
+
+**One-time setup (already done 2026-09-29; don't repeat):** the library holds the Harvest OAuth app
+(ID/secret/redirect in Script Properties, set via the Provision menu's admin prompts), and the
+"Harvest OAuth callback" web-app deployment. Each user connects once via Development WIP → 🔐 Authorize Harvest.
+Planners need `userinfo.email` in their manifest and the three stubs (`showHarvestProvisionDialog`,
+`harvest_provisionPreview`, `harvest_provisionConfirm`) — the planner template has them from 2026-09-29.
+
+### 3.5a Write the agreement facts into the planner
+Extract from the signed agreement (header table + Program Fees table) and the PO, then write the JSON into the
+planner's **Harvest Setup** tab, cell **A3** (create the tab if missing; A1 = label). The user never pastes it.
+Shape (Gigamon example in `spanner-apps-script/_fixtures/harvest-provision/gigamon_agreement.json`):
+`{title, date, signed, type, engBudget, materialsEst, depositEng, depositMat, netDays, billing, weeks, link,
+fees:[{role, hrsWk, rate, weeks}], po:{number, date, netDays, link}}`
+- `signed`: leave null if the agreement has no date — the script uses the PO date.
+- `depositEng`/`depositMat`: from the agreement header ("Deposit $38,950 ($38,950 eng + $0 materials)").
+- Writing it (browser): if the tab is missing, click **＋** (bottom-left) to add a sheet, rename it `Harvest Setup`
+  (right-click the tab → Rename), then put the one-line JSON in A3 with the name-box cell method (Browser Automation
+  Notes). Read it back. If writing fails, the dialog also has the box — give the user the JSON in chat as a last resort.
+- Script-side (not yet proven live, 2026-09-29): the dialog loads A3, and Create saves the box back to A3.
+
+### 3.5b Check with the Harvest MCP before Create
+- `list_clients` / `list_projects` — client exists? project already exists (don't duplicate)?
+- `list_project_assignments` on the template (HOURLY `25028609`, INTERVAL `27125057`; test copies
+  `49282400` / `49282410` when `HARVEST_USE_TEST_COPY=true`) — tasks, rates, team.
+
+### 3.5c User runs the preview and Create
+Planner → Development WIP → **🌾 Provision Harvest Project (preview)…**. The preview loads the Harvest Setup JSON.
+The user checks it, ticks any 🛑 acknowledgement (e.g. agreement Net 30 vs PO Net 45), and clicks **Create in Harvest**.
+What the script does:
+- Creates the project from the template (T&M, bill by task, cost budget = engineering budget, dates, notes filled
+  from the agreement/PO), and copies the template team (all flagged manager).
+- **Tasks = only baseline roles with hours** (plus their `NB - ` task). Role → task map: Sr PD / Senior Mechanical
+  Engineer → Sr. Product Development; SR EE / SR FW → Sr. Product Development - EE/FW; PR Exec / PR ME / PR EE /
+  Principal / Exec → Principal; TPL → Technical Program Lead; PD → Product Development; CTO → CTO.
+  Harvest's auto-added default tasks and all unused roles are removed.
+- Writes the Harvest ID to B10 and **moves the baseline rows with hours to the top** (unused rows stay below, unchanged).
+  Only columns that are plain values in every baseline row move; a column mixing formulas and values stops the sort.
+  (Tested on mock data only, 2026-09-29 — check the baseline after the first real run.)
+
+### 3.5d Verify, then finish
+- `list_project_assignments` (tasks + users) and `get_project_budget` on the new ID; compare to the preview.
+- Remove any stray task with `remove_task_from_project` only if the user approves.
+- Add the Harvest link to the Notion project page; check off the Harvest items on the checklist.
+- Invoice values (PO number, due-date terms) are **manual in Harvest** — the API can't set them. Put the paste-ready
+  values in the checklist's Harvest item (code blocks).
 
 ---
 
@@ -461,6 +585,21 @@ Format (match the team's existing launch posts):
   first pay cycle after launch)
 - Link to the Notion project page
 
+### 6b-0. Draft the deposit invoice in Harvest (Harvest MCP)
+
+After the Harvest project exists, create the launch invoice as a **draft** with `create_invoice` (drafts can't be sent
+through the MCP; never send). T&M: the agreement's Deposit. FF: Payment 1.
+- `client_id`: the project's client; `issue_date`: today; `payment_term`: `upon receipt` (agreement Deposit Net 0)
+- `purchase_order`: the PO number
+- `subject`: `Product Development and Engineering | {Project} | Launch Deposit` (prefix `[TEST] ` on test runs)
+- one line item: `kind` **`Launch Deposit`**, `description` `Launch Deposit — Engineering ({pct}% of ${engBudget} estimate)`,
+  `quantity` 1, `unit_price` deposit, `project_id` the new project
+- `notes`: `Engineering deposit per agreement dated {date}: ${depositEng} ({pct}% of ${engBudget} engineering estimate) + ${depositMat} materials. Applied 50% against the first invoice and 50% against the second.`
+  (test runs: start with `SANDBOX TEST — DO NOT SEND.`)
+- The MCP **can't edit invoices**. Verify with `get_invoice`; anything wrong is fixed by the user in Harvest.
+- Add a checklist item under **Launch invoice**: "Review and update the draft invoice in Harvest", with the subject,
+  description, PO number and notes in `plain text` code blocks, the due date, and "Type: Launch Deposit".
+
 ### 6b. Draft Launch Invoice Request
 
 Use `create_draft` to draft the invoice request:
@@ -470,7 +609,7 @@ Use `create_draft` to draft the invoice request:
 - `body`:
   - For T&M programs: "Please prepare the Deposit invoice as designated on page 1 of the agreement"
   - For FF programs: "Please prepare Payment 1 as designated in the payment schedule"
-  - Include project name, client, and TPL contact
+  - Include project name, client, and TPL contact, and the Harvest draft invoice number from 6b-0
 
 ### 6c. Draft Contractor Forecast Notification (if applicable)
 
@@ -492,7 +631,7 @@ generated links using `notion-update-page`:
 - Exec Summary link
 - Google Drive folder link
 - External shared drive link (if created)
-- Harvest link (remind user to add after manual setup)
+- Harvest link (`https://spannerpd.harvestapp.com/projects/{id}` after Create)
 
 ---
 
@@ -507,24 +646,23 @@ List only what's still open — drop anything Claude completed in this run.
 - [ ] **Tag opportunity as Won** in the BD pipeline
 - [ ] **Update BD Pipeline Bookings/Win sheet** with the new booking
 - [ ] Any Step 3e/3f item that couldn't be completed
-- [ ] On test runs: list every TEST entry written (case studies row, rate tracker line, __SUMMARY row) so the user can delete them
+- [ ] On test runs: list every TEST entry written (case studies row, rate tracker line, __SUMMARY row, Harvest test project and draft invoice) so the user can delete them
+
+### Notion
+- [ ] Any project database still titled `[Client] | [Project]` (only if the title-only rename failed — list by name)
 
 ### Project Planner Setup
 - [ ] **Unclick BD checkbox** (Cell F4) — this activates the planner for revenue forecasting
-- [ ] **Load staff** in the Baseline section
+- [ ] **Load staff** in the Baseline section (only if Claude couldn't load it from the proposal)
 - [ ] **Load staff** in the Estimated Forecast section as Pending (note PR, TPL, PD, SPD roles)
 - [ ] **Loop Giles in** before assigning any contractors to the program
 
 ### Harvest Setup
-- [ ] **Create Harvest project** using the Harvest API Data Hub or directly in Harvest
-  - Use the ZZ Spanner template (HOURLY Rate or INTERVAL Billing)
-  - Set client, project name, budget, hourly rate, dates, and team members
-  - [How-to video](https://www.notion.so/spannerpd/Harvest-Setup-fbc4f28b198148cdb8b7c68f9ef9c951)
-  - [Setup instructions](https://www.notion.so/fbc4f28b198148cdb8b7c68f9ef9c951)
+- [ ] **Run Planner → Development WIP → 🌾 Provision Harvest Project (preview)…** and click Create (only if not done)
+- [ ] **Set Invoice values by hand** in Harvest (PO number, due-date terms) — values are in the checklist
+- [ ] **Review the draft deposit invoice** in Harvest (Type = Launch Deposit) — values are in the checklist
 - [ ] For Fixed Fee: confirm payment plan with BD DRI in Harvest
 - [ ] Note any subbed contractors/partners and their budgets
-- [ ] **Add HarvestID** to the Project Planner
-- [ ] **Add Harvest link** to the Notion project page
 
 ### Shared Tools (if applicable)
 - [ ] Set up CAD sharing, whiteboard, or other shared dev tools with the client
@@ -547,18 +685,21 @@ When running this skill, follow this sequence:
 0. **Create project page** (Step 0) — Instruct user to click the Notion template button, then collect the new page URL
 1. **Gather info** (Step 1) — Use AskUserQuestion in 2-3 batches
 2. **Search for Notion users** — Look up BD DRI, TPL, and Buddy user IDs
-3. **Populate Notion pages** (Step 2) — Rename project page & checklist, populate tracker entry, add to launch checklists
-4. **Set up Google Drive** (Step 3) — Create Planner via template script (saved to Budget Forecast Tool folder), fix its launch date and TPL, add it to the __SUMMARY ProjectURLs range, generate Exec Summary deck via Planner → Generate Exec Summary Deck (saved to 00__Exec_Summaries folder), copy template folder structure to Studio > Projects, add exec summary shortcut to project's Program_Management folder, archive the signed agreement if provided (3e), then the company lists (3f)
+3. **Populate Notion pages** (Step 2) — Rename project page, all `[Client] | [Project]` subpages & the checklist, populate tracker entry, add to launch checklists
+4. **Set up Google Drive** (Step 3) — Create Planner via template script with launch date, duration and budgets set in the dialog (saved to Budget Forecast Tool folder), check B12–B15 and G28, set TPL, approve J1:L1, load the Baseline from the proposal, add it to the __SUMMARY ProjectURLs range, generate Exec Summary deck via Planner → Generate Exec Summary Deck (saved to 00__Exec_Summaries folder), copy template folder structure to Studio > Projects, add exec summary shortcut to project's Program_Management folder, archive the signed agreement if provided (3e), then the company lists (3f)
+4b. **Set up Harvest** (Step 3.5) — Write agreement JSON to the planner's Harvest Setup tab, MCP pre-checks, user clicks Create, MCP verify, add Harvest link
 5. **Set up Slack** (Step 4) — Create channels or instruct user
 6. **Set up Calendar** (Step 5) — Ask for meeting times, then create events
-7. **Notifications** (Step 6) — #spanner-team win post, invoice request draft, contractor forecast draft
+7. **Notifications** (Step 6) — draft deposit invoice in Harvest (6b-0), #spanner-team win post, invoice request draft, contractor forecast draft
 8. **Update Notion with links** (Step 7) — Add all generated links back to the project page
 9. **Present manual punch list** (Step 8) — Clear summary of what's left
 
 After each major step, report what was created with links so the user can verify.
 
-**Never do these — they stay with the user:** Harvest setup (any part), the BD Pipeline
-Bookings/Win sheet, and sending any email (Gmail items stay as drafts).
+**Never do these — they stay with the user:** clicking **Create** in the Harvest Provision dialog, editing
+Harvest outside the approved steps (Claude may only: read via the MCP, draft the deposit invoice, and remove stray
+tasks on the new project with approval), sending any invoice, the BD Pipeline Bookings/Win sheet, and sending any
+email (Gmail items stay as drafts).
 
 **Close-out Rule**: Only move the checklist to Completed and set the tracker to "In Progress"
 when every item on the checklist is checked (done or N/A). Before doing it, `notion-fetch` the
@@ -582,7 +723,7 @@ These IDs are used throughout the automation:
 | Active Projects page | `ed1d7d57705d4767af8af87be34eda8d` |
 | Project Tracker data source | `collection://efb9ea40-a2ae-4130-8d34-4cd0a39c8101` |
 | Program Launch Checklists page | `4eee597dc8c642078d44dbd5fe83d03a` |
-| Launch Checklist template | `35ace833d8a14c1fb4cc722849914406` |
+| Launch Checklist template (old 2024 page, now deleted — new checklists come from the Active Projects template button) | `35ace833d8a14c1fb4cc722849914406` |
 | Project rate tracker | `448dc1dfe5c64845904daf600a34eeb6` |
 
 ### Google Drive
@@ -598,6 +739,17 @@ These IDs are used throughout the automation:
 | Future case studies | `1BLZsjKLweZF1T22vuhEq-zr7wqBMRnieVwTYllqaeCU` |
 | BD Proposals folder | `1NlFgqtAtol-7j7XsRRImaclmas2tPOK0` |
 | __SUMMARY Spanner Forecast (Combine tab, ProjectURLs = B2:B47) | `1nLjHU0WUh-fYUA_Xvm61izUDFpG6TN8gN4Dpw1A4s1o` |
+
+### Harvest
+| Resource | ID |
+|---|---|
+| Template: HOURLY Rate Project (read-only) | `25028609` |
+| Template: INTERVAL Billing Project (read-only) | `27125057` |
+| HOURLY Rate Project COPY (OK to edit/test) | `49282400` |
+| INTERVAL Billing Project COPY (OK to edit/test) | `49282410` |
+| Sandbox-Mason test project / draft invoice | `49283299` / #3896 |
+| Provision script | `spanner-apps-script/spanner-library/HarvestProvision.js` (branch `harvest-provision`) |
+
 ### Slack
 - Win announcements: #spanner-team (`C02PJEL2T5L`)
 
@@ -615,6 +767,15 @@ These IDs are used throughout the automation:
    database schemas and can destroy data across all rows. The Project Tracker, Program Launch
    Checklists, and all other Notion databases referenced in this skill are production data.
    Schema modifications (ALTER COLUMN, ADD COLUMN, DROP COLUMN, RENAME COLUMN) are forbidden.
+   **Single exception (approved by Mason Curry, 2026-09-29): title-only renames of databases
+   inside the new project page.** Allowed only when all of these hold:
+   - the database's `ancestor-path` includes this run's `PROJECT_PAGE_URL` (it was created by the
+     template button in Step 0, during this run);
+   - the call passes only `data_source_id` and `title` — no `statements`, `description`,
+     `in_trash` or `is_inline`;
+   - the new title only replaces the `[Client]` / `[Project]` placeholders.
+   Anything else — the Project Tracker, Program Launch Checklists, any database outside the new
+   project page, any column or option change — remains forbidden.
 
 2. **NEVER use `notion-update-page` to modify properties on rows you did not create.** Only
    update pages that were created during the current skill execution. Do not batch-update
@@ -632,6 +793,9 @@ These IDs are used throughout the automation:
    is **Planner → Generate Exec Summary Deck** from the project's planner spreadsheet (Step 3b).
    A copied deck will not be linked to the planner and will silently show stale data.
 
+6. **Never edit the ZZ Spanner template projects in Harvest** (HOURLY `25028609`, INTERVAL `27125057`).
+   Only the COPY projects may be edited for testing. Never send an invoice.
+
 ---
 
 ## Error Handling
@@ -646,12 +810,15 @@ These IDs are used throughout the automation:
   planner owner (Mason Curry); everything else can continue.
 - Notion page can't be edited or moved by the user: it's still locked from the template — they
   unlock it via ••• → Unlock.
+- Harvest Provision errors: "Specified permissions are not sufficient to call Session.getActiveUser" → the planner's
+  manifest lacks `userinfo.email` (add it via clasp). "Not Configured" → the Provision menu's admin setup runs
+  (Mason only). "function not found" → the planner lacks the three Provision stubs (add via clasp).
 
 ---
 
 ## Browser Automation Notes (built-in browser + Google Sheets)
 
-Learned on the 2026-09-28 test run. Use these instead of rediscovering them.
+Learned on the 2026-09-28 test runs (incl. Sandbox-Mason | Scout ME Design Support, v1.7.1). Use these instead of rediscovering them.
 
 - **Sign-in / auth**: Google may show "Verify it's you" — the user must sign in; never enter
   credentials. If Apps Script OAuth ("Authorize Scripts" / "Run Authorization") won't complete in
@@ -668,14 +835,38 @@ Learned on the 2026-09-28 test run. Use these instead of rediscovering them.
   it.dispatchEvent(new MouseEvent('mouseover',{bubbles:true,view:window}));
   ```
   then `computer key Return`.
-- **Editing a cell**: synthetic typing into the grid never commits. What works:
-  1. Get the cell into edit mode with a real **double-click** on it (take a fresh screenshot for
-     coordinates; confirm with JS that `#t-name-box` shows the right cell and
-     `document.activeElement.className` contains `editable`).
-  2. JS: `document.execCommand('selectAll'); document.execCommand('insertText', false, VALUE)`.
-  3. Real `Return` key to commit. Verify by navigating back and reading `#t-formula-bar-input`.
-  - To read a cell: set `#t-name-box` via `execCommand('insertText')`, dispatch an Enter keydown on
-    it, then read `#t-formula-bar-input`. (Name-box navigation alone does not enter edit mode.)
+- **Editing a cell — preferred, coordinate-free (proven 2026-09-28):**
+  1. JS: navigate with the name box (set `#t-name-box` via `execCommand('insertText')`, dispatch an
+     Enter keydown, wait ~800 ms).
+  2. Real `Return` key → the cell enters edit mode.
+  3. JS: check `#t-name-box` is the intended cell, then
+     `document.execCommand('selectAll'); document.execCommand('insertText', false, VALUE)`.
+     **Always guard on the name-box value** — if it doesn't match, write nothing.
+  4. Real `Tab` (or `Return`) to commit.
+  For consecutive cells in a row: commit with `Tab`, press `Return` to edit the next cell, repeat.
+  To skip a cell, press `Tab` without `Return`. Verify every write by reading it back.
+  - Fallback: real **double-click** on the cell (fresh screenshot for coordinates) instead of
+    steps 1–2. Coordinates break under viewport emulation, so don't combine the two.
+  - To read a cell: name-box navigation as above, then read `#t-formula-bar-input`. Reads can lag
+    right after a structural change (row insert) — wait and re-read before trusting them.
+- **Allow access (IMPORTRANGE `#REF!`)**: hover the `#REF!` cell (or select it via the name box)
+  so the "You need to connect these spreadsheets" card appears, then do a **real click** on its
+  **Allow access** button. JS-dispatched clicks on `div.jfk-button` sometimes work and sometimes
+  don't; if a JS click leaves `#REF!`, use a real click. The card can open off-screen at the
+  bottom of the narrow pane — widen the viewport. Approving one planner link can resolve its
+  siblings too; re-read before clicking again.
+- **Row groups**: the planner hides rows 7–24 (and 45–57, 72–85) in collapsed groups. Name-box
+  navigation to a hidden row silently lands on the next visible row — expand the group first.
+- **New planner authorization**: the first script run on each new planner shows "Authorization
+  required" even if the template was authorized. OAuth consent is the user's to approve — ask them,
+  then reload and re-run the menu item.
+- **Custom menu item didn't run** (no "Running script" toast within a few seconds): the JS
+  highlight + Return missed. Take a screenshot — the menu is usually still open — and click the
+  item with a real click.
 - Screenshots of the pane can lag; trust JS reads of the name box / formula bar over pixels.
-- The built-in browser pane is narrow — custom menus overflow off the menubar; don't rely on
-  viewport emulation (it breaks click coordinates). Reset any emulation to `desktop`.
+- **Viewport**: the built-in pane is narrow, and the planner's frozen columns A–G fill it, so the
+  week columns (H onward) and J1:L1 are invisible. `resize_window` 1600×1600 shows them. Real
+  single clicks (e.g. Allow access) worked at 1600×1000; a double-click at 1600×1600 landed on the
+  wrong cell, so edit cells with the name-box method while emulating. Reset to `desktop` when done.
+- **Screenshots from the user** land in `~/Documents/Screenshots for Claude` with a narrow no-break space before
+  AM/PM in the file name; staging by that name fails. Copy them to ASCII names in a `_claude-copies` subfolder first.
