@@ -8,7 +8,7 @@ description: >
   "automate project setup", "run the launch checklist", or references the BD-PD launch process.
   This skill creates Notion pages, Project Tracker entries, Google Drive folders and templates,
   the __SUMMARY forecast row, the Harvest project (via the planner's Provision script) and draft
-  deposit invoice, Slack channels and the #spanner-team win post, Google Calendar
+  deposit invoice, the SpannerOS project (staging, imported from Harvest), Slack channels and the #spanner-team win post, Google Calendar
   meetings, and notification email drafts — then
   provides a punch list for the remaining manual steps.
 ---
@@ -16,18 +16,21 @@ description: >
 # Spanner BD-to-PD Project Launch Automation
 
 This skill automates the BD-to-PD Launch Checklist that Spanner runs for every new project. It handles
-setup across Notion, Google Drive, Harvest, Slack, Google Calendar, and Gmail, then gives clear instructions
+setup across Notion, Google Drive, Harvest, SpannerOS, Slack, Google Calendar, and Gmail, then gives clear instructions
 for the steps that still need a human.
 
 ## Before You Start (read once per session)
 
-**Connectors needed:** Notion, Google Drive, Slack, Google Calendar, Gmail, Harvest (MCP), plus a browser tool
+**Connectors needed:** Notion, Google Drive, Slack, Google Calendar, Gmail, Harvest (MCP), Supabase (MCP, for
+SpannerOS staging) and the `~/Developer/spanner-planner` folder (Step 3.6), plus a browser tool
 (Claude's built-in browser pane, or Claude in Chrome) for the Google Sheets / Apps Script / Drive
 website steps. If any is missing, say which steps will fall back to the punch list and continue.
 
 **The user must be signed in to Google in that browser.** If Google shows "Verify it's you", the
 user signs in — never type credentials. The Apps Script steps also need a one-time script
-authorization per person (see Browser Automation Notes).
+authorization per person (see Browser Automation Notes). **The Spanner account must be the
+browser's default Google account (`/u/0`).** Planner scripts fail when a personal account is
+signed in first. The tell is that scripts only work in an incognito window (Torence, 2026-09-30).
 
 **Permission prompts:** several steps write to company-wide files (the __SUMMARY forecast, the
 case-studies sheet, the rate tracker, DATA STACK, #spanner-team). The session may ask the user to
@@ -69,6 +72,30 @@ The checklist has these sections, each detailed below:
 10. Meetings (TPL)
 11. Launch Checklist Complete (TPL)
 
+### Launch vs. pre-launch ([BD]) mode — decide this first
+
+If **none** of (a), (b) or (c) is true yet (proposal out, no signature, no PO, no verbal go), the run is
+in **BD mode**. Ask in Step 1 Batch 1 and default to BD mode when the answer is "not yet". BD is often
+run weeks before launch, sometimes by BD and not the TPL. In BD mode:
+- **Look for an existing BD planner first.** Search the __SUMMARY `Combine` ProjectURLs rows and the
+  Budget Forecast Tool folder for `[BD]` planners for this client and its product or code names. Timeless
+  Way already had one from Sep 25 under a product name, "Auralink | [BD] Array v0 Sampling Fixture".
+  If one exists, ask the user whether to reuse it. Don't create a duplicate that double-counts.
+- **Planner:** check **BD Pre-launch** (F4), set the project/phase field (B6) to `[BD] {Phase}`, and set
+  **Agreement #** (B7) to `PENDING`. The Step 3a reminder to uncheck F4 applies only at real launch.
+- **Harvest (3.5):** Provision can still run so the project is ready at signature. Put the **proposal**
+  URL in the JSON `link`, leave `signed` null, and leave `po` out. The script labels that link
+  "Signed agreement:", so give the user this paste-ready replacement for the Harvest notes (Edit
+  project → Notes): `Proposal: {link}` on one line, then `Signed agreement:` left blank.
+- **Slack:** create the internal channel, but **no launch post and no #spanner-team win draft**.
+  An unsent draft for a not-yet-won program blocks other posts in that channel. Put the win post
+  text in the punch list, or schedule it well out (e.g. 2 months) if the user asks.
+- **Launch invoice:** put the paste-ready text in the checklist, but skip the 6b-0 Harvest draft and
+  the 6b email until it's signed.
+- **Close-out:** never. The checklist stays In Progress until launch. On signature, re-run for the
+  remaining items: uncheck F4, drop `[BD]`, set Agreement #, archive the agreement, then the invoice
+  and win post.
+
 **Paste-ready text goes where it's used.** Anything the user has to copy into another app (invoice subject,
 description, notes, PO number) goes into the Notion checklist item as `plain text` code blocks. Anything a
 script reads (the agreement facts) goes into the planner. Never make the user open another file to find it.
@@ -81,6 +108,10 @@ The project page and its launch checklist are created via a **Notion template bu
 Active Projects page. This button lives at:
 
 `https://www.notion.so/spannerpd/Active-Projects-ed1d7d57705d4767af8af87be34eda8d#1af7b5cbf3854c66ba94de35d7949e4b`
+
+**Tin client projects** use the same skill. The user clicks the **Tin** checklist button instead
+(template `2ede8162d2ee4d7280255efa151c657c`) and gives you that page's URL. Tin has no launch invoice
+(see 6b-0).
 
 **Tell the user**: "Before I can automate the rest of the checklist, you need to click the
 'New Project' button on the Active Projects page in Notion. This creates the project page and
@@ -117,7 +148,8 @@ the user. You need:
 - **Project name** — the full project name (e.g., "Gigamon | ME Design Support")
 - **Project description** — a brief summary of the project
 - **Program type** — T&M (Time & Materials) or Fixed Fee
-- **Signed agreement and PO** — Drive links (the Harvest setup and deposit invoice are built from them)
+- **Signed agreement and PO** — Drive links (the Harvest setup and deposit invoice are built from them).
+  If there's neither (and no verbal go), confirm **BD mode** (see Important Context) and ask for the proposal link instead.
 
 ### Batch 2 — People
 - **BD DRI** — the Business Development person responsible (name or email)
@@ -269,7 +301,8 @@ The Project Planner template spreadsheet ID is: `1G4igU0bjZiR5xU7-_nT1JuhbC1Dd-u
      and use `form_input` on that ref with `YYYY-MM-DD`. If `form_input` doesn't stick, try JS in
      the dialog frame: set the input's `.value = 'YYYY-MM-DD'` and dispatch `input` and `change`
      events. Take a screenshot and confirm the date shows before clicking Create.
-     (Not yet proven — first run to try it, report whether it worked.)
+     **What worked (Timeless Way, 2026-09-30):** a single typed string didn't take. Clicking the date
+     field and pressing the keys one at a time (month, day, year) did. Try that first.
    - **Project Type** select: set it with `form_input` the same way (T&M or Fixed Fee).
    - If the launch date truly can't be set in the dialog, stop and ask the user to enter it in
      the dialog themselves before you click Create. Don't create the file and patch B15 later.
@@ -298,6 +331,9 @@ The Project Planner template spreadsheet ID is: `1G4igU0bjZiR5xU7-_nT1JuhbC1Dd-u
      If no row matches the rate, ask the user.
    - Enter the proposal's avg hrs/wk in each week column for that line's weeks, in sequence
      (e.g. 105 hrs/wk × 2 wks then 20 hrs/wk × 4 wks → 105,105,20,20,20,20).
+     Use **full weeks even for a mid-week launch**. Don't pro-rate week 1 or add a partial final week
+     (Mason, 2026-09-30).
+   - Rows 34–35 above the roles are the **Hours** and **Rate | Name** header rows. Never write into or move them.
    - Leave the other role rows as they are. Only rows with hours count as "used": they become the Harvest
      tasks, and the Harvest Create step moves them to the top of the baseline (Step 3.5).
    - **Verify:** D59 (Weekly Baseline Plan total) must equal the proposal's Engineering Subtotal
@@ -316,7 +352,8 @@ Do not rename it manually — use the **Planner → Update File Name** menu opti
 
 **Important**: Remind the user:
 - Do NOT add this on a Monday before Harvest approval is complete
-- Unclick the BD checkbox (Cell F4) — this activates the planner for revenue forecasting
+- Unclick the BD checkbox (Cell F4) — this activates the planner for revenue forecasting.
+  **Only at real launch.** In BD mode, F4 stays checked (see Important Context).
 - Load staff in the Baseline and Estimated Forecast sections
 
 ### 3a-2. Add the Planner to the __SUMMARY Forecast Sheet
@@ -346,6 +383,10 @@ charts and tables already linked to the planner data; no manual linking is neede
 3. If the "Run Authorization" button is visible, click it first and complete the OAuth flow
 4. Run **Planner** menu → **📊 Generate Exec Summary Deck** (not the "(Sandbox)" variant) —
    real clicks on the custom menu don't work; use the JS menu method in Browser Automation Notes.
+   **Before pressing Return, read the highlighted item's text** (`.goog-menuitem-highlight`) and
+   confirm it contains no "Sandbox". The Timeless Way run (2026-09-30) ran the Sandbox item anyway.
+   If the Sandbox deck gets made, tell the user and let them decide whether to keep or replace it.
+   Don't regenerate on your own.
 5. Wait ~60s ("Building Deck" toast) — it creates a new Google Slides deck automatically
 6. The new deck opens in a new tab; capture its URL and file ID from the tab info
 
@@ -479,7 +520,12 @@ with the **Harvest MCP** (read tools + draft invoices). The user clicks **Create
 (ID/secret/redirect in Script Properties, set via the Provision menu's admin prompts), and the
 "Harvest OAuth callback" web-app deployment. Each user connects once via Development WIP → 🔐 Authorize Harvest.
 Planners need `userinfo.email` in their manifest and the three stubs (`showHarvestProvisionDialog`,
-`harvest_provisionPreview`, `harvest_provisionConfirm`) — the planner template has them from 2026-09-29.
+`harvest_provisionPreview`, `harvest_provisionConfirm`). The live template has had them since
+**2026-09-30**. The 09-29 commit never reached the live template, so planners copied before then lack them.
+If the menu item errors `Script function not found: showHarvestProvisionDialog`, the planner is one of
+those. Stop the Harvest step and ask the user for the planner's bound **Script ID** (Extensions → Apps
+Script → ⚙️ Project Settings). The stubs are added from Claude Code with clasp, never from this run.
+Then continue with the rest of the checklist.
 
 ### 3.5a Write the agreement facts into the planner
 Extract from the signed agreement (header table + Program Fees table) and the PO, then write the JSON into the
@@ -511,14 +557,111 @@ What the script does:
   Harvest's auto-added default tasks and all unused roles are removed.
 - Writes the Harvest ID to B10 and **moves the baseline rows with hours to the top** (unused rows stay below, unchanged).
   Only columns that are plain values in every baseline row move; a column mixing formulas and values stops the sort.
-  (Tested on mock data only, 2026-09-29 — check the baseline after the first real run.)
+  The two header rows (34 **Hours**, 35 **Rate | Name**) never move. On the first real run (Timeless Way,
+  2026-09-30) they were sorted down to rows 37–38; that was fixed in the library the same day.
+  **After Create, check that rows 34–35 still read Hours / Rate | Name** and the used roles start at row 36.
+  If they don't, tell the user; don't re-sort by hand.
 
 ### 3.5d Verify, then finish
 - `list_project_assignments` (tasks + users) and `get_project_budget` on the new ID; compare to the preview.
+- Compare `list_projects` `starts_on`/`ends_on` with the agreed launch and end dates. On Timeless Way,
+  Harvest ended Oct 26 while the agreed date was Oct 30. Flag any difference; the user fixes it in Harvest.
 - Remove any stray task with `remove_task_from_project` only if the user approves.
 - Add the Harvest link to the Notion project page; check off the Harvest items on the checklist.
 - Invoice values (PO number, due-date terms) are **manual in Harvest** — the API can't set them. Put the paste-ready
   values in the checklist's Harvest item (code blocks).
+
+## Step 3.6: SpannerOS Project (staging, after Harvest Create)
+
+SpannerOS gets the project **from Harvest**; nobody types it in. The planner repo's importer has a
+single-project mode that creates the client (if it's new), the project (linked by `harvest_project_id`,
+with the display ID `{CODE}-NNN` assigned by a database trigger) and its role slots. After that, the
+scheduled Harvest sync brings in hours on its own. That sync only runs the `time` leg and never creates
+projects, so this step is the only way a new project gets in.
+
+**Staging only for now (Mason, 2026-09-29):** staging = `cutkctzmojpgbwtoaiic`. This skill never writes
+to prod (`lyerknxfxesoecmpipip`). Don't use the app's **New project** form: it creates the row without the
+Harvest link. (Proven path: Sandbox-Mason Harvest `49283299` → `SAN-001`, 2026-09-29.)
+
+**Needs:** `~/Developer/spanner-planner` as a connected folder (request it if missing) with its
+`.env.staging.local`, plus the Supabase connector. Needs from earlier steps: `HARVEST_PROJECT_ID` (3.5d),
+the planner's spreadsheet ID (3a), the TPL's email, the current phase, the PO number, and the payment terms the
+user accepted in the Provision preview.
+
+### 3.6a Pre-check (Supabase MCP `execute_sql`, staging, read-only)
+```sql
+select p.id, p.display_id, p.name, c.name as client, c.code
+from projects p join clients c on c.id = p.client_id
+where p.harvest_project_id = {HARVEST_PROJECT_ID};
+```
+If a row comes back, the project is already in SpannerOS: skip to 3.6d.
+
+### 3.6b Dry run (device_bash in the repo; writes nothing)
+```bash
+cd "$HOME/mnt/spanner-planner"
+set -a; . ./.env.staging.local; set +a
+case "$NEXT_PUBLIC_SUPABASE_URL" in *cutkctzmojpgbwtoaiic*) ;; *) echo "REFUSING: env is not staging"; exit 1;; esac
+npm run sync:harvest -- --legs=clients,projects,assignments --harvest-project={HARVEST_PROJECT_ID}
+```
+Always keep the `case` guard: `.env.local` in that repo points at **prod**. Read the output:
+- The `single project:` lines must name this client and project, with the project `new`.
+- Any `⚠ link` / `✗ ambiguous` line, flagged budget, unmatched task or **new client** means stop and show the user.
+- **New client:** the dry run proposes a 2–4 letter code in `scripts/output/harvest-client-codes.csv`.
+  The code is **permanent** (every display ID for that client uses it). Show the suggested code
+  and wait for the user to approve it or pick another. Then copy the CSV to
+  `scripts/output/harvest-client-codes.approved.csv`, set `approved_code` on that row, and pass
+  `--codes-file=scripts/output/harvest-client-codes.approved.csv` at commit. Handle a flagged budget
+  or task the same way (`--budgets-file` / `--tasks-file`, see `npm run sync:harvest -- --help`).
+
+**Network:** as of 2026-09-29 the Cowork shell can't reach `api.harvestapp.com` or `*.supabase.co`
+(HTTP 000). If the run fails on the network, don't work around it. Give the user the exact
+command block to paste into Terminal on their Mac, and continue from the output they paste back.
+
+### 3.6c Commit, only after the user says yes
+Same command block with `--commit` added, plus any approved `--*-file` flags. Show the user the
+counts it reports.
+
+### 3.6d Fill the fields the importer leaves blank (Supabase MCP, staging, one row)
+Show the user the values first. Then run this against **the one project id** from 3.6a/3.6f, never a broader `where`:
+```sql
+update projects set
+  tpl_user_id = (select id from users where lower(email) = lower('{TPL_EMAIL}') and is_active),
+  phase = '{CURRENT_PHASE}',
+  po_number = '{PO_NUMBER}',
+  payment_terms_days = {NET_DAYS}
+where id = '{SPANNEROS_PROJECT_UUID}' and harvest_project_id = {HARVEST_PROJECT_ID}
+returning display_id, tpl_user_id, phase, po_number, payment_terms_days;
+```
+- Exactly one row must come back, and `tpl_user_id` must not be null. If the TPL isn't found, leave the
+  column unset and tell the user.
+- Only these four columns. Nothing else on `projects`, and no other table.
+- TPL and payment terms must **match the planner**, because planner sync (3.6e) treats the sheet as the winner.
+- Use the payment terms the user accepted in the Provision preview (for example, PO Net 45 over agreement Net 30).
+
+### 3.6e Register the planner for planner sync
+The two-way planner ⇄ staging sync covers only the planners listed in `scripts/input/planner-sync.json`
+(gitignored, local). Add
+`{ "docId": "{PLANNER_SPREADSHEET_ID}", "note": "{Client} | {Project} ({DISPLAY_ID})", "enabled": true }`
+to `planners` with a python read-modify-write. Skip it if the docId is already there. If the file is missing,
+tell the user; don't create it. Then run a dry run: `npm run sync:planners -- --project={DISPLAY_ID}`
+(use the same network fallback as 3.6b). The 2-hour timer commits on its own. Run `--commit` now only if the user asks.
+
+### 3.6f Verify (Supabase MCP, staging)
+```sql
+select p.id, p.display_id, p.name, c.code, p.harvest_project_id, p.agreement_type, p.status,
+       u.email as tpl, p.phase, p.po_number, p.payment_terms_days,
+       b.engineering_budget, b.launch_date, b.total_weeks,
+       (select count(*) from project_billing_roles r where r.project_id = p.id and r.is_active) as roles
+from projects p join clients c on c.id = p.client_id
+left join users u on u.id = p.tpl_user_id
+left join project_budgets b on b.project_id = p.id
+where p.harvest_project_id = {HARVEST_PROJECT_ID};
+```
+Compare the roles with the Harvest tasks from 3.5d. Save `DISPLAY_ID`, put `SpannerOS (staging): {DISPLAY_ID}`
+on the Notion project page (Step 7), and check off the item if the checklist has one.
+
+On **test runs**, the Sandbox variant imports as its own client (Sandbox-Mason → `SAN`). Add its
+SpannerOS rows to the cleanup list. Deleting them is the user's call; Claude never deletes them.
 
 ---
 
@@ -536,6 +679,7 @@ If the connector refuses, give the user the exact names to create manually.
 
 Once channels exist (or if the user provides the channel name), use `slack_send_message` to post
 a launch announcement in the internal channel with key project details.
+**BD mode:** no post and no draft. Unsent drafts block other posts in the channel.
 
 ---
 
@@ -585,11 +729,14 @@ Format (match the team's existing launch posts):
   first pay cycle after launch)
 - Link to the Notion project page
 
+**BD mode:** skip 6a entirely. Put the post text in the punch list, or schedule it only if the user asks.
+
 ### 6b-0. Draft the deposit invoice in Harvest (Harvest MCP)
 
 After the Harvest project exists, create the launch invoice as a **draft** with `create_invoice` (drafts can't be sent
 through the MCP; never send). T&M: the agreement's Deposit. FF: Payment 1.
 **Tin projects have no launch invoice** — skip 6b-0 and 6b for Tin (the Tin checklist has no Launch invoice section).
+**BD mode:** skip 6b-0 and 6b too. Still put the paste-ready invoice text in the checklist for launch day.
 - `client_id`: the project's client; `issue_date`: today; `payment_term`: `upon receipt` (agreement Deposit Net 0)
 - `purchase_order`: the PO number
 - `subject`: `Product Development and Engineering | {Project} | Launch Deposit` (prefix `[TEST] ` on test runs)
@@ -633,6 +780,7 @@ generated links using `notion-update-page`:
 - Google Drive folder link
 - External shared drive link (if created)
 - Harvest link (`https://spannerpd.harvestapp.com/projects/{id}` after Create)
+- SpannerOS display ID (`SpannerOS (staging): {DISPLAY_ID}`, Step 3.6)
 
 ---
 
@@ -644,8 +792,9 @@ Format this as a checklist the user can work through:
 List only what's still open — drop anything Claude completed in this run.
 
 ### Must Do Now (always the user's)
-- [ ] **Tag opportunity as Won** in the BD pipeline
-- [ ] **Update BD Pipeline Bookings/Win sheet** with the new booking
+- [ ] **Tag opportunity as Won** in the BD pipeline (not in BD mode)
+- [ ] **Update BD Pipeline Bookings/Win sheet** with the new booking (not in BD mode)
+- [ ] **BD mode:** the held items for launch day (uncheck F4, drop `[BD]`, set Agreement #, fix the Harvest notes' Proposal/Signed agreement links, win post, deposit invoice + request)
 - [ ] Any Step 3e/3f item that couldn't be completed
 - [ ] On test runs: list every TEST entry written (case studies row, rate tracker line, __SUMMARY row, Harvest test project and draft invoice) so the user can delete them
 
@@ -664,6 +813,11 @@ List only what's still open — drop anything Claude completed in this run.
 - [ ] **Review the draft deposit invoice** in Harvest (Type = Launch Deposit) — values are in the checklist
 - [ ] For Fixed Fee: confirm payment plan with BD DRI in Harvest
 - [ ] Note any subbed contractors/partners and their budgets
+
+### SpannerOS (staging)
+- [ ] **Run the import in Terminal** (only if the Cowork shell couldn't reach Harvest/Supabase) — command block from Step 3.6b/c
+- [ ] **Approve the new client code** (only for a new client). The code is permanent.
+- [ ] Add the planner to `scripts/input/planner-sync.json` (only if Claude couldn't)
 
 ### Shared Tools (if applicable)
 - [ ] Set up CAD sharing, whiteboard, or other shared dev tools with the client
@@ -685,10 +839,12 @@ When running this skill, follow this sequence:
 
 0. **Create project page** (Step 0) — Instruct user to click the Notion template button, then collect the new page URL
 1. **Gather info** (Step 1) — Use AskUserQuestion in 2-3 batches
+1b. **Decide launch vs. BD mode** — no signature, PO or verbal go means BD mode (Important Context). In BD mode, look for an existing [BD] planner before creating one.
 2. **Search for Notion users** — Look up BD DRI, TPL, and Buddy user IDs
 3. **Populate Notion pages** (Step 2) — Rename project page, all `[Client] | [Project]` subpages & the checklist, populate tracker entry, add to launch checklists
 4. **Set up Google Drive** (Step 3) — Create Planner via template script with launch date, duration and budgets set in the dialog (saved to Budget Forecast Tool folder), check B12–B15 and G28, set TPL, approve J1:L1, load the Baseline from the proposal, add it to the __SUMMARY ProjectURLs range, generate Exec Summary deck via Planner → Generate Exec Summary Deck (saved to 00__Exec_Summaries folder), copy template folder structure to Studio > Projects, add exec summary shortcut to project's Program_Management folder, archive the signed agreement if provided (3e), then the company lists (3f)
 4b. **Set up Harvest** (Step 3.5) — Write agreement JSON to the planner's Harvest Setup tab, MCP pre-checks, user clicks Create, MCP verify, add Harvest link
+4c. **Set up SpannerOS** (Step 3.6, staging only) — pre-check, single-project import dry run, user OK (and client code if new), commit, fill TPL/phase/PO/terms, register the planner for sync, verify
 5. **Set up Slack** (Step 4) — Create channels or instruct user
 6. **Set up Calendar** (Step 5) — Ask for meeting times, then create events
 7. **Notifications** (Step 6) — draft deposit invoice in Harvest (6b-0), #spanner-team win post, invoice request draft, contractor forecast draft
@@ -699,7 +855,8 @@ After each major step, report what was created with links so the user can verify
 
 **Never do these — they stay with the user:** clicking **Create** in the Harvest Provision dialog, editing
 Harvest outside the approved steps (Claude may only: read via the MCP, draft the deposit invoice, and remove stray
-tasks on the new project with approval), sending any invoice, the BD Pipeline Bookings/Win sheet, and sending any
+tasks on the new project with approval), any write to SpannerOS **prod**, committing the SpannerOS import or
+the Step 3.6d update without the user's OK, choosing a new client code, deleting SpannerOS rows, sending any invoice, the BD Pipeline Bookings/Win sheet, and sending any
 email (Gmail items stay as drafts).
 
 **Close-out Rule**: Only move the checklist to Completed and set the tracker to "In Progress"
@@ -752,6 +909,15 @@ These IDs are used throughout the automation:
 | Sandbox-Mason test project / draft invoice | `49283299` / #3896 |
 | Provision script | `spanner-apps-script/spanner-library/HarvestProvision.js` (branch `harvest-provision`) |
 
+### SpannerOS
+| Resource | ID |
+|---|---|
+| Staging Supabase (the only target for now) | `cutkctzmojpgbwtoaiic` |
+| Prod Supabase (never written by this skill) | `lyerknxfxesoecmpipip` |
+| Repo / importer | `~/Developer/spanner-planner` · `scripts/import-harvest.ts` (`npm run sync:harvest`) |
+| Planner sync config (gitignored) | `scripts/input/planner-sync.json` |
+| Sandbox-Mason test project | Harvest `49283299` → `SAN-001` |
+
 ### Slack
 - Win announcements: #spanner-team (`C02PJEL2T5L`)
 
@@ -798,6 +964,12 @@ These IDs are used throughout the automation:
 6. **Never edit the ZZ Spanner template projects in Harvest** (HOURLY `25028609`, INTERVAL `27125057`).
    Only the COPY projects may be edited for testing. Never send an invoice.
 
+7. **SpannerOS: staging only, one project only.** Every importer run keeps the staging `case` guard
+   (the repo's `.env.local` is prod). Always do a dry run before `--commit`, and commit only after the user
+   says yes. Direct SQL is limited to the Step 3.6d update of the four fields on the one new project,
+   matched by id. No schema changes, no deletes, no other rows or tables. Client codes are permanent,
+   so the user picks them.
+
 ---
 
 ## Error Handling
@@ -806,6 +978,7 @@ These IDs are used throughout the automation:
 - If a Google Drive copy fails, provide the template URL so the user can copy manually
 - If Slack channel creation isn't supported by the connector, provide exact names for manual creation
 - Always verify created resources by fetching them after creation
+- If the SpannerOS import can't reach the network from Cowork, hand the user the Terminal command block (3.6b) instead of improvising
 - If any step fails, continue with the remaining steps and note the failure in the final punch list
 - Planner script error **"Library with identifier ProjectMaster is missing"**: the user lacks access
   to the planner's Apps Script library. Stop the planner steps and ask them to get access from the
