@@ -43,7 +43,8 @@ try:
                         last_work = i
                 elif name == "Bash":
                     cmd = inp.get("command") or ""
-                    if HIST.search(cmd):
+                    # a cd into history/ followed by a relative filename counts too
+                    if HIST.search(cmd) or (re.search(r"history", cmd) and re.search(r"(session-history\.md|\b\d{4}-\d{2}\.md)", cmd)):
                         last_hist = i
                     elif WORK_CMD.search(cmd):
                         last_work = i

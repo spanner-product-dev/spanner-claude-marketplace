@@ -9,7 +9,7 @@
       "name": "spanner-security",
       "source": "./plugins/spanner-security",
       "description": "Spanner PD's secure-by-default engineering standard, enforced as a pre-tool hook: a secret gate that scans every Bash command before it runs. THE HOOK IS THE WHOLE REASON THIS IS A PLUGIN \u2014 a hook is the one thing an org skill cannot express. The standard's text lives in the claude.ai Skills library as `spanner-security-standard`, set to Required; it is deliberately not duplicated here.",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "category": "security"
     }
   ]
