@@ -10,7 +10,7 @@ split by scope (see SpannerOS CLAUDE.md, "Keeping the Tracking Files Small").
 import glob, hashlib, json, os, re, sys, tempfile
 
 LIMIT_KB = 30
-NAME = re.compile(r"(^|/)(plan|notes)-[^/]+\.md$")
+NAME = re.compile(r"(^|/)(plan|notes)(-[^/]+)?\.md$")  # plan-x.md, notes-x.md, and plain plan.md / notes.md
 
 try:
     data = json.load(sys.stdin)

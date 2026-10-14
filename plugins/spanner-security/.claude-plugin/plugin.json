@@ -1,6 +1,6 @@
 {
   "name": "spanner-security",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Spanner PD's secure-by-default engineering standard as an always-on skill plus a pre-commit/push gate: GitHub, Supabase, and Cloudflare rules and the three-layer compliance framework (privacy, enterprise trust, regulated data).",
   "author": {
     "name": "Spanner Product Development",
