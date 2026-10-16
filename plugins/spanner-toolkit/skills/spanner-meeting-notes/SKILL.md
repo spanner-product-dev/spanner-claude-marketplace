@@ -115,7 +115,7 @@ without ever listing the folder). Before any such claim reaches the notes:
   you did not list is not a folder you checked. Name in Sources every folder you
   actually listed, and say plainly which ones you could not reach.
 - **Statuses / sources:** don't leave an action item "Unknown," or claim a link/doc
-  doesn't exist, until you've run the Slack → Gmail → matrix → prior-notes checks in
+  doesn't exist, until you've run the Slack → Gmail → prior-notes checks in
   Step 6. "I didn't find it" is only valid *after* looking.
 - **Attendance & facts:** every factual claim in the notes (who attended, what
   shipped, that a file/link exists) must trace to something you actually observed this
@@ -497,7 +497,7 @@ default is a blue link, not an embed.
 **Action items — 5-column Notion table + two carry-over tables.** Render action
 items as a Notion `<table>` with a `<colgroup>` so widths stick:
 
-- **Current meeting's table — 5 columns, in order: Owner | Status | Action | Claude Notes / sources | Human Notes** (Mason's direction, 2026-07-24). The `Claude Notes / sources` column holds source links (matrix task ID → playbook/matrix page, Slack permalink, capture URL, prompt-library/subpage link). The final **`Human Notes`** column is left **empty** for the human to fill in later — always include it as an empty trailing column.
+- **Current meeting's table — 5 columns, in order: Owner | Status | Action | Claude Notes / sources | Human Notes** (Mason's direction, 2026-07-24). The `Claude Notes / sources` column holds source links (Slack permalink, capture URL, prompt-library/subpage link). The final **`Human Notes`** column is left **empty** for the human to fill in later — always include it as an empty trailing column.
 - Widths: Owner `90`, Status `110` (narrow); Action `380`, Claude Notes `380` (wide); Human Notes: add a bare `<col>` (no width) as the 5th column.
 - For the current meeting's new items, leave **Status** blank (or a short state like Blocked / Gated).
 - Keep each `Claude Notes` cell to a sentence or two plus its links — the brevity rule applies inside table cells too.
@@ -540,7 +540,7 @@ anything "Unknown":
    `#spanner-team`, etc.).
 2. **Gmail** — search the person/topic (e.g. "8-Week AI & Staffing Plan",
    "Luxshare").
-3. **The matrix** (Supabase) and **prior meeting-notes pages** in the same DB.
+3. **Prior meeting-notes pages** in the same DB.
 
 Label each resolved item with its source (e.g. "Slack #spanner-os, Jul 6–10").
 Only leave a question in "Need Your Input" after these sources come up empty.
@@ -558,13 +558,6 @@ paste raw `collection://` URIs or internal file paths.)
 `<span color="blue">[label](url)</span>` so all link text renders blue — Slack,
 Notion, portal, captures, everything, not just screenshots. (Verified: this span
 syntax round-trips in Notion, including inside table cells and colored blocks.)
-
-**Link matrix task tags.** Whenever a matrix task ID appears in the notes
-(`260625-3`, `260715-1`, `Q1.4`, `Q2B.4`, etc.), make the tag a blue link that
-**deep-links to that task's anchor** on the matrix-v2-proposal page — the anchor is
-the task ID verbatim:
-`<span color="blue">[`260715-1`](https://spanneros-wip.pages.dev/_Overall_Plan_and_Prioritization/matrix-v2-proposal#260715-1)</span>`
-(pattern: `…/matrix-v2-proposal#<TASK-ID>`).
 
 ### 7. Publish to Notion
 
@@ -632,7 +625,7 @@ header in its own callout, then place any numbered list as normal blocks after
 it. Basic verified syntax: `<callout icon="🤖">` … content … `</callout>`.
 Place these two sections after the Sources section.
 
-### 9. Sync statuses back — prior notes page + matrix (not optional)
+### 9. Sync statuses back to the prior notes page (not optional)
 
 Carrying status forward onto the new page isn't enough on its own; keep the other
 systems in agreement:
@@ -643,12 +636,8 @@ systems in agreement:
   carry-over table don't disagree. If an item is now Done, mark it Done on the prior
   page rather than leaving it open. (Reviewing the current transcript + prior notes
   and reconciling both directions is the point — not just appending a fresh table.)
-- **Hand off to `matrix-task-sync` for matrix-backed items.** Any action item that
-  maps to a matrix task — it carries a task ID (`260625-3`, `Q2B.4`, …) or clearly
-  corresponds to one — must have its status pushed back to the matrix. Invoke the
-  **matrix-task-sync** skill to apply the change (direct Supabase update or a numbered
-  migration, per that skill); don't hand-edit the matrix from here — let
-  matrix-task-sync own it. Report which tasks you synced.
+
+The Overall Planning task matrix is retired (Mason, 2026-10-15): don't link matrix task IDs, set a Task IDs property, or hand anything to matrix-task-sync.
 
 ### 10. Optional follow-ups (only when asked)
 
