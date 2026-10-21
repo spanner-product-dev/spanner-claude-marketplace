@@ -64,7 +64,7 @@ everything else be discoverable but off.
 
 **Available to install is not a demotion.** It means the skill appears in the directory and a person
 switches it on in one click. The engineering set — `spanneros-crud-scaffolder`,
-`spanneros-schema-migration`, `spanner-apps-script`, `torque-design-language`,
+`spanneros-schema-migration`, `spanner-apps-script`, `torque-design-language`, `spanneros-design-system`,
 `spanner-internal-deploy`, `spanner-domain-ssl-dns` — is used by one or two people, so it belongs
 here rather than in everyone's context.
 

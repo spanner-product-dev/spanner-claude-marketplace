@@ -316,7 +316,7 @@ content is present; if it is not, that skill is incomplete and you should say so
 
 Click **+ Add** at the top right, then upload each of:
 
-`spanner-apps-script` · `torque-design-language` · `matrix-task-sync`
+`spanner-apps-script` · `torque-design-language` · `matrix-task-sync` · `spanneros-design-system` (new 2026-10-07)
 
 ---
 
@@ -339,12 +339,12 @@ accuracy** — see the README section *How many skills to turn on*.
 | `spanner-brand-voice` | Anyone may write something client-facing. |
 | `spanner-brand-visual` | Same, for anything designed. |
 
-### Available to install — visible, off (12)
+### Available to install — visible, off (13)
 
 `apply-project-template` · `matrix-task-sync` · `project-launch` · `spanner-apps-script` ·
 `spanner-design-loop` · `spanner-domain-ssl-dns` · `spanner-internal-deploy` ·
 `spanner-meeting-notes` · `spanner-weekly-digest` · `spanneros-crud-scaffolder` ·
-`spanneros-schema-migration` · `torque-design-language`
+`spanneros-design-system` · `spanneros-schema-migration` · `torque-design-language`
 
 **This is not a demotion.** These are real skills used by one or two people. A person switches one
 on in a single click, and meanwhile it is not competing for Claude's attention in everyone else's
