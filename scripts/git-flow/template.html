@@ -1,0 +1,762 @@
+<title>Marketplace Git Flow</title>
+<script>
+/* pre-paint theme: dark default; dark · light · system, remembered per person */
+(function(){var p='dark';try{p=localStorage.getItem('sos-os-theme')||localStorage.getItem('sos-torque-theme')||'dark'}catch(e){}
+var t=p==='system'?(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):(p==='light'?'light':'dark');
+document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-pref',p);})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'SpannerSans';src:url(data:font/woff2;base64,/*FONT*/) format('woff2');font-weight:400;font-display:swap}
+html[data-theme="dark"],:root{
+  --bg:#293A49; --bgglow1:rgba(6,166,237,.10); --bgglow2:rgba(226,103,42,.05);
+  --panel:rgba(255,255,255,.045); --panel2:rgba(255,255,255,.075); --line:rgba(255,255,255,.10);
+  --tx:#E8EEF4; --mut:#93A3B2; --dim:#5E6E7D;
+  --azure:#1FB2F5; --orange:#ED7A40; --amber:#D9A514; --green:#2EC592; --lblue:#CAECF6;
+  --shadow:none; --inbg:rgba(0,0,0,.25); --stick:#314254;
+  --e2:0 0 0 1px rgba(255,255,255,.08),0 18px 48px rgba(0,0,0,.35);
+  --hdr-bg:#1D2B37; --ll:68%; --relfg:#0C2A20; --tagfg:#0B1620;
+}
+html[data-theme="light"]{
+  --bg:#F4F7F9; --bgglow1:rgba(6,166,237,.06); --bgglow2:rgba(226,103,42,.03);
+  --panel:#FFFFFF; --panel2:#FFFFFF; --line:#DCE3E8;
+  --tx:#293A49; --mut:#6B7A8A; --dim:#97A2AC;
+  --azure:#06A6ED; --orange:#E2672A; --amber:#B58A10; --green:#0B7C58; --lblue:#CAECF6;
+  --shadow:0 1px 3px rgba(41,58,73,.08),0 8px 28px rgba(41,58,73,.05);
+  --inbg:#F4F7F9; --stick:#FFFFFF; --e2:0 2px 6px rgba(41,58,73,.10),0 16px 40px rgba(41,58,73,.10);
+  --hdr-bg:#293A49; --ll:40%; --relfg:#FFFFFF; --tagfg:#FFFFFF;
+}
+:root{
+  --r-panel:16px; --r-in:10px; --r-btn:11px; --r-chip:999px;
+  --fs-title:26px; --fs-h2:20px; --fs-body:16px; --fs-data:15.5px; --fs-small:15px; --fs-cap:12.5px; --fs-big:40px;
+  --gray-nb:#97A2AC;
+  --hdr-tx:#FFFFFF; --hdr-accent:#06A6ED; --hdr-link:#8FD6F7; --hdr-ctl:rgba(255,255,255,.06); --hdr-line:rgba(255,255,255,.45); --hdr-on-bg:#8FD6F7; --hdr-on-tx:#1D2B37;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+html[data-theme="light"]{color-scheme:light}
+body{margin:0;font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;font-size:var(--fs-body);color:var(--tx);line-height:1.45;font-variant-numeric:tabular-nums;
+  background:radial-gradient(1100px 500px at 75% -10%,var(--bgglow1),transparent 60%),radial-gradient(800px 420px at 8% 8%,var(--bgglow2),transparent 55%),var(--bg);background-attachment:fixed;min-height:100vh}
+button{font:inherit;color:inherit}
+a{color:var(--azure)}
+.mono{font-family:var(--mono);font-size:.92em}
+:focus-visible{outline:2px solid var(--azure);outline-offset:2px}
+
+/* navy header */
+.tbar{background:var(--hdr-bg);color:var(--hdr-tx);height:66px;position:sticky;top:env(safe-area-inset-top,0px);z-index:50;border-bottom:1px solid rgba(255,255,255,.08)}
+.tbar .in{height:100%;display:flex;align-items:center;gap:16px;padding:0 24px}
+.brand{display:block;white-space:nowrap;font-family:SpannerSans,Inter,sans-serif;font-size:42.4px;line-height:1;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.brand>*{vertical-align:baseline}
+.brand i{font-style:normal;color:var(--hdr-accent)}
+.brand .btitle{font-family:Inter,'Helvetica Neue',sans-serif;font-size:22px;font-weight:400;letter-spacing:.04em}
+.brand .bsep{display:inline-block;width:0;height:28px;border-left:1px solid var(--hdr-accent);margin:0 24px -2.9px}
+.hdrctl{display:flex;gap:10px;align-items:center;flex:0 0 auto}
+.hdrctl label{font-size:12.5px;color:var(--hdr-link);letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+.hdrctl select{background:var(--hdr-ctl);color:var(--hdr-tx);border:1px solid var(--hdr-line);border-radius:var(--r-btn);padding:7px 10px;font-size:15px;min-height:36px}
+.hdrctl select option{color:#1D2B37}
+@media (max-width:620px){.tbar .in{padding:0 16px}.brand{font-size:29.7px}.brand .btitle{font-size:17px}.brand .bsep{height:19.6px;margin:0 14px -2px}.hdrctl label{display:none}}
+
+main{padding:24px;display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
+@media (max-width:620px){main{padding:16px}}
+.cap{font-size:var(--fs-cap);letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--mut)}
+h1{margin:2px 0 0;font-size:var(--fs-title);font-weight:800;letter-spacing:-.015em;line-height:1.15}
+h2{margin:0;font-size:var(--fs-h2);font-weight:800;letter-spacing:-.01em}
+.q{margin:6px 0 0;color:var(--mut)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-panel);box-shadow:var(--shadow);min-width:0;padding:18px 20px}
+.panel>.ph{display:flex;gap:8px 16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
+.panel>.ph .sub{color:var(--mut);font-size:var(--fs-small);flex:1 1 300px}
+.muted{color:var(--mut)}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:transparent;color:var(--tx);padding:8px 14px;border-radius:var(--r-btn);cursor:pointer;font-size:var(--fs-data);font-weight:600;white-space:nowrap;min-height:36px}
+.btn:hover{border-color:var(--azure)}
+.btn.sm{padding:4px 10px;font-size:var(--fs-small);min-height:30px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-chip);padding:2px;background:var(--inbg);gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:var(--r-chip);cursor:pointer;color:var(--mut);font-size:14px;white-space:nowrap;min-height:30px}
+.seg button.on{background:var(--azure);color:#fff;font-weight:700}
+.in-txt{background:var(--inbg);border:1px solid var(--line);border-radius:var(--r-in);color:var(--tx);padding:7px 12px;font-size:max(16px,1em);min-height:36px;min-width:0;width:240px;max-width:100%}
+.in-txt:focus{border-color:var(--azure);outline:0}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:var(--r-chip);padding:2px 9px;font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--c,var(--mut));
+  background:color-mix(in srgb,var(--c,var(--mut)) 12%,transparent);border:1px solid color-mix(in srgb,var(--c,var(--mut)) 35%,transparent)}
+.chip.ok{--c:var(--green)}.chip.risk{--c:var(--orange)}.chip.act{--c:var(--azure)}.chip.neutral{--c:var(--mut)}
+
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{padding:14px 16px;border-radius:var(--r-panel);border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow)}
+.kpi .n{font-size:var(--fs-big);font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.kpi .n small{font-size:15px;font-weight:600;color:var(--mut);margin-left:4px;letter-spacing:0}
+.kpi .l{margin-top:2px}
+.kpi.ok .n{color:var(--green)}.kpi.risk .n{color:var(--orange)}.kpi.act .n{color:var(--azure)}
+.kpi .d{color:var(--mut);font-size:13.5px;margin-top:2px}
+
+/* how a change travels */
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:8px 0}
+.stage{flex:1 1 150px;min-width:140px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--inbg);cursor:default}
+.stage .n{font-size:30px;font-weight:800;line-height:1.1}
+.stage .d{color:var(--mut);font-size:13.5px;margin-top:2px}
+.stage.ok{border-color:color-mix(in srgb,var(--green) 45%,transparent)}.stage.ok .n{color:var(--green)}
+.stage.risk{border-color:color-mix(in srgb,var(--orange) 45%,transparent);border-style:dashed}.stage.risk .n{color:var(--orange)}
+.stage.act{border-style:dashed;border-color:color-mix(in srgb,var(--azure) 55%,transparent)}.stage.act .n{color:var(--azure)}
+.arrow{flex:0 0 34px;display:grid;place-items:center;color:var(--dim);font-size:20px}
+.fork{flex:1 1 220px;min-width:200px;display:grid;gap:8px}
+@media (max-width:760px){.arrow{flex:0 0 100%;height:22px;transform:rotate(90deg)}}
+
+/* still open */
+.open-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--inbg)}
+.card h3{margin:0 0 4px;font-size:17px;font-weight:800}
+.card.risk{border-color:color-mix(in srgb,var(--orange) 50%,transparent)}
+.card.ok{border-color:color-mix(in srgb,var(--green) 45%,transparent)}
+.item{padding:9px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+details>summary{cursor:pointer;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details>summary .tw::before{content:'▸';display:inline-block;margin-right:6px;color:var(--mut);transition:transform .15s}
+details[open]>summary .tw::before{transform:rotate(90deg)}
+.todo{display:inline-block;border:1.5px dashed var(--orange);color:var(--orange);border-radius:8px;padding:1px 8px;font-size:13px;font-weight:600}
+
+/* weekly chart */
+.chartwrap{overflow-x:auto}
+.chartwrap svg{display:block}
+.chartwrap .bar{cursor:pointer}
+.chartwrap .bar:hover{opacity:.8}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--mut);font-size:13.5px;margin-top:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* timeline git graph */
+.tools{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap}
+.tools .grow{flex:1 1 auto}
+.graph{--gw:60px;--ny:23px;margin-top:8px}
+.ev,.dayh{display:grid;grid-template-columns:var(--gw) minmax(0,1fr)}
+.gut{position:relative;align-self:stretch}
+.gut .rail{position:absolute;left:11px;top:0;bottom:0;width:2px;background:var(--line)}
+.gut .ln{position:absolute;width:4px;margin-left:-1px;background:var(--c);opacity:1}
+.gut .ln::before{content:'';position:absolute;left:-5px;right:-5px;top:0;bottom:0}
+.gut .ln.x{background:repeating-linear-gradient(to bottom,var(--c) 0 5px,transparent 5px 9px)}
+.gut .cn{position:absolute;height:2px;background:var(--green);opacity:.7;top:calc(var(--ny) - 1px)}
+.gut .nd{position:absolute;top:calc(var(--ny) - 7px);width:14px;height:14px;border-radius:50%;z-index:2}
+.nd.merge{background:var(--green);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--green);left:5px}
+.nd.open{background:var(--c);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--c)}
+.nd.close{background:var(--orange);border:2px solid var(--bg);color:#fff;font-size:9px;line-height:10px;text-align:center;font-weight:800}
+.dayh{padding-top:6px}
+.dayh .dl{padding:12px 0 8px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;border-bottom:1px solid var(--line);font-weight:800}
+.dayh .dl span{font-weight:500;color:var(--mut);font-size:14px}
+.evh{display:grid;grid-template-columns:minmax(150px,290px) 76px 84px 78px 190px minmax(0,1fr);gap:4px 12px;align-items:baseline;width:100%;text-align:left;background:transparent;border:0;padding:12px 8px 12px 4px;cursor:pointer;border-radius:10px;min-height:46px}
+.evh:hover{background:var(--panel2)}
+.evh .tm{color:var(--mut);font-size:14px}
+.chip.ty{font-family:var(--mono);font-size:12px}
+.defs{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr);gap:10px 18px;align-items:baseline;margin:6px 0 22px}
+.defs dt{margin:0}.defs dd{margin:0;color:var(--tx);font-size:15px}
+.defs dd .muted{display:block;font-size:13.5px;margin-top:2px}
+.defh{margin:18px 0 4px;font-size:16.5px;font-weight:800}
+@media (max-width:700px){.defs{grid-template-columns:1fr}.defs dt{margin-top:6px}}
+.cnt{font-family:var(--mono);font-size:11px;font-weight:700;line-height:1;background:color-mix(in srgb,var(--tx) 14%,transparent);color:var(--mut);padding:2px 6px;border-radius:var(--r-chip);margin-left:5px;vertical-align:1px}
+.seg button.on .cnt{background:rgba(255,255,255,.3);color:#fff}
+.seg button{font-weight:600}
+.areasel{background:var(--inbg);color:var(--tx);border:1px solid var(--line);border-radius:var(--r-btn);padding:6px 10px;min-height:36px;font-size:14px}
+.evh .id{font-family:var(--mono);font-weight:600;font-size:14px}
+.evh .ti{overflow-wrap:anywhere}
+.evh .br{font-family:var(--mono);font-size:12.5px;color:var(--mut);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:900px){.evh{grid-template-columns:72px 84px 78px minmax(0,1fr)}.evh .tag{grid-column:1/-1}.evh .ti{grid-column:1/-1}.evh .arc{grid-column:1/-1}}
+.evh .arc{display:flex;gap:4px;flex-wrap:wrap;align-self:center}.chip.ar{--c:var(--mut);font-size:11.5px;padding:1px 7px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#seg-area{border-radius:14px}   /* skill names make this wrap to several rows; a full pill radius turns it into a blob */
+.evb{grid-column:2;padding:2px 8px 18px 4px}
+.pr-card{border:1px solid var(--line);border-radius:14px;background:var(--inbg);padding:14px 16px;display:grid;gap:14px}
+.pr-card h3{margin:0;font-size:18px;font-weight:800}
+.flow{display:flex;flex-wrap:wrap;gap:8px 0;align-items:stretch}
+.step{flex:1 1 130px;min-width:120px;max-width:240px;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:8px 11px}
+.step .sl{font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--mut)}
+.step .sv{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
+.step .ss{color:var(--mut);font-size:12.5px;overflow-wrap:anywhere}
+.step.ok{border-color:color-mix(in srgb,var(--green) 50%,transparent)}.step.ok .sv{color:var(--green)}
+.step.risk{border-color:color-mix(in srgb,var(--orange) 55%,transparent);border-style:dashed}.step.risk .sv{color:var(--orange)}
+.step.act .sv{color:var(--azure)}
+.flow .ar{flex:0 0 22px;display:grid;place-items:center;color:var(--dim)}
+@media (max-width:620px){.flow .ar{flex:0 0 100%;height:14px;transform:rotate(90deg)}.step{max-width:none}}
+.desc{border-top:1px solid var(--line);padding-top:10px}
+.desc summary{font-weight:700}
+.md{margin-top:8px;color:var(--tx);font-size:15px;overflow-wrap:anywhere}
+.md h4{margin:12px 0 4px;font-size:15.5px}
+.md p{margin:6px 0}
+.md ul,.md ol{margin:6px 0;padding-left:22px}
+.md code{font-family:var(--mono);font-size:.9em;background:var(--inbg);border:1px solid var(--line);border-radius:6px;padding:0 5px}
+.md pre{background:var(--inbg);border:1px solid var(--line);border-radius:10px;padding:10px;overflow-x:auto;font-family:var(--mono);font-size:13px}
+.clist{margin:8px 0 0;padding:0;list-style:none;display:grid}
+.clist li{display:grid;grid-template-columns:70px 150px minmax(0,1fr);gap:2px 12px;padding:7px 0;border-top:1px solid var(--line);font-size:14.5px}
+.clist li .au{color:var(--mut);font-size:13px;grid-column:3}
+@media (max-width:760px){.clist li{grid-template-columns:70px minmax(0,1fr)}.clist li .s{grid-column:1/-1}.clist li .au{grid-column:1/-1}}
+.facts{display:flex;gap:6px 18px;flex-wrap:wrap;color:var(--mut);font-size:14px}
+.facts b{color:var(--tx);font-weight:600}
+/* phones (Mason, 2026-10-17: "doesn't show the branch lines on the phone"): the lines stay, on columns squeezed to fit
+   (render() picks the spacing), drawn a little thinner, with smaller dots so neighbours don't swallow each other */
+@media (max-width:700px){
+  .gut .ln{width:3px;margin-left:-.5px}
+  .gut .el.tr{border-top-width:3px;border-right-width:3px}
+  .gut .el.bl{border-bottom-width:3px;border-left-width:3px}
+  .gut .el.br{border-bottom-width:3px;border-right-width:3px}
+  .gut .nd.open,.gut .nd.close{width:12px;height:12px;top:calc(var(--ny) - 6px);font-size:8px;line-height:8px}
+  /* the row's facts wrap instead of holding 234px of fixed columns beside the lines */
+  .evh{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+  .evh .tag,.evh .ti{flex-basis:100%}
+}
+
+/* environments */
+.envgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+.env{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--inbg);display:grid;gap:6px}
+.env h3{margin:0;font-size:17px;font-weight:800}
+.env.ok{border-color:color-mix(in srgb,var(--green) 45%,transparent)}
+.env.act{border-color:color-mix(in srgb,var(--azure) 55%,transparent)}
+.mrow{display:grid;grid-template-columns:minmax(0,1.2fr) 110px 110px minmax(0,2fr);gap:4px 12px;align-items:baseline;padding:8px 4px;border-top:1px solid var(--line);font-size:14.5px}
+.mrow.hd{font-size:12.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--mut);border-top:0}
+.mrow .nt{color:var(--mut);font-size:13.5px;overflow-wrap:anywhere}
+@media (max-width:760px){.mrow{grid-template-columns:minmax(0,1fr) 90px 90px}.mrow .nt{grid-column:1/-1}}
+.empty{padding:30px;text-align:center;color:var(--mut)}
+
+
+.gut .el{position:absolute;height:14px;border-color:var(--c);border-style:solid;border-width:0;opacity:1}
+.gut .el.x{border-style:dashed}
+.gut .el.tr{border-top-width:4px;border-right-width:4px;border-top-right-radius:10px;margin-top:-1px}
+.gut .el.bl{border-bottom-width:4px;border-left-width:4px;border-bottom-left-radius:10px;margin-left:-1px;margin-top:1px}
+.gut .el.br{border-bottom-width:4px;border-right-width:4px;border-bottom-right-radius:10px;margin-top:1px}
+.nd.cut{width:10px;height:10px;top:calc(var(--ny) - 5px);background:var(--c);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--c)}
+.nd.tip{background:var(--bg);border:2px dashed var(--orange)}
+.mainlbl{padding:12px 4px 6px;font-size:15px}
+.relrow{--ny:36px}
+.relbar{display:flex;gap:8px 16px;align-items:center;flex-wrap:wrap;padding:16px 20px;margin:14px 0 10px;border-radius:14px;background:var(--green);color:var(--relfg);font-size:17px;box-shadow:0 6px 22px color-mix(in srgb,var(--green) 38%,transparent)}
+.relbar .relk{font-size:13px;font-weight:800;letter-spacing:.12em;border:2px solid currentColor;border-radius:var(--r-chip);padding:2px 12px}
+.relbar b{font-size:20px;font-weight:800;letter-spacing:-.01em}
+.relbar .mono{background:rgba(0,0,0,.2);color:inherit;border-radius:8px;padding:2px 9px;font-size:15px}
+.relbar .wait{margin-left:auto;background:var(--orange);color:#fff;border-radius:var(--r-chip);padding:5px 14px;font-weight:800;font-size:15px}
+.relbar .sync{margin-left:auto;font-weight:700}
+.nd.rel{left:2px;width:22px;height:22px;top:calc(var(--ny) - 11px);background:var(--green);border:3px solid var(--bg);border-radius:6px;transform:rotate(45deg);box-shadow:0 0 0 2px var(--green)}
+
+
+.tag{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:12.5px;font-weight:600;padding:2px 9px;border-radius:var(--r-chip);color:var(--tagfg);
+  background:var(--c);border:1px solid color-mix(in srgb,var(--c) 75%,#000);justify-self:start}
+.tag b{font-weight:800}
+.graph.hov .gut [data-k]:not(.hl){opacity:.28;filter:grayscale(1)}
+.graph.hov .ev:not(.hl) .evh,.graph.hov .ev:not(.hl) .evb{opacity:.3;filter:grayscale(1)}
+.graph.hov .gut .ln.hl{width:6px;margin-left:-2px}
+.graph.hov .ev.hl .evh{background:var(--panel2)}
+
+/* tabs */
+.pane{display:grid;gap:20px}
+.pane[hidden]{display:none}
+.tabbar{position:sticky;top:calc(66px + env(safe-area-inset-top,0px));z-index:40;margin:-8px -24px 0;padding:0 24px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:2px;overflow-x:auto}
+.tabs button{background:transparent;border:0;padding:12px 16px 11px;min-height:44px;font-size:15px;font-weight:600;color:var(--mut);border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;display:inline-flex;gap:8px;align-items:center}
+.tabs button:hover{color:var(--tx)}
+.asof{margin:6px 0 0;font-size:14px;font-weight:600;color:var(--tx)}
+.asof span{color:var(--mut);font-weight:400}
+.tabs .stamp{margin-left:auto;align-self:center;padding-left:16px;font-size:13px;color:var(--mut);white-space:nowrap;display:flex;gap:6px;align-items:center}
+@media (max-width:620px){.tabs .stamp{display:none}}
+.tabs button.on{color:var(--tx);border-bottom-color:var(--azure)}
+.tabs .tc{font-size:12.5px;font-weight:700;color:var(--mut);background:var(--inbg);border:1px solid var(--line);border-radius:var(--r-chip);padding:0 8px}
+@media (max-width:620px){.tabbar{margin:-8px -16px 0;padding:0 16px}}
+.ev,.dayh{scroll-margin-top:140px}
+/* branches */
+.brow{border-top:1px solid var(--line)}
+.brow>summary{display:grid;grid-template-columns:minmax(0,1fr) 130px 70px 190px 80px;gap:4px 12px;align-items:center;padding:10px 4px;min-height:44px}
+.brow>summary:hover{background:var(--panel2)}
+.brow .nm{font-family:var(--mono);font-size:14px;overflow-wrap:anywhere}
+.brow .bd{padding:2px 4px 14px 24px;color:var(--mut);font-size:14.5px;display:grid;gap:4px}
+@media (max-width:900px){.brow>summary{grid-template-columns:minmax(0,1fr) auto}.brow>summary>:nth-child(n+3){grid-column:1/-1;color:var(--mut);font-size:13.5px}}
+.hint{font-size:13.5px;color:var(--mut)}
+footer{padding:8px 24px 40px;color:var(--mut);font-size:13.5px;display:grid;gap:6px;max-width:1400px}
+@media (max-width:620px){footer{padding:8px 16px 32px}}
+.sel-chip{display:inline-flex;gap:6px;align-items:center}
+</style>
+<header class="tbar"><div class="in">
+  <div class="brand">spanner <i>os</i><span class="bsep"></span><span class="btitle">git flow</span></div>
+  <div class="hdrctl"><label for="themesel">theme</label>
+    <select id="themesel" aria-label="theme"><option value="dark">dark</option><option value="light">light</option><option value="system">system</option></select></div>
+</div></header>
+
+<main>
+  <div>
+    <div class="cap">spanner-claude-marketplace · pull request history</div>
+    <h1>branches, commits, pull requests and merges</h1>
+    <p class="q">what landed when, and what is still open. every time is Pacific. click any row to expand it.</p>
+    <p class="asof" id="asof"></p>
+  </div>
+
+  <div class="tabbar"><nav class="tabs" role="tablist" aria-label="sections">
+    <button role="tab" id="tab-overview" data-tab="overview" aria-controls="pane-overview">overview</button>
+    <button role="tab" id="tab-timeline" data-tab="timeline" aria-controls="pane-timeline">timeline <span class="tc" id="tc-timeline"></span></button>
+    <button role="tab" id="tab-branches" data-tab="branches" aria-controls="pane-branches">branches <span class="tc" id="tc-branches"></span></button>
+    <button role="tab" id="tab-definitions" data-tab="definitions" aria-controls="pane-definitions">definitions</button>
+  <span class="stamp"><span id="stamp"></span> <label class="hint" style="margin-left:10px;cursor:pointer" title="reloads when you have been idle for 90 s, so a republished page appears by itself; that reload keeps your tab and filters, opening the page by hand starts with none"><input type="checkbox" id="autoreload"> auto-reload</label></span></nav></div>
+  <div class="pane" id="pane-overview" role="tabpanel" aria-labelledby="tab-overview">
+  <section class="kpis" id="kpis" aria-label="totals"></section>
+
+  <section class="panel" aria-labelledby="h-flow">
+    <div class="ph"><div><div class="cap">the process</div><h2 id="h-flow">how a change travels</h2></div>
+      <div class="sub">branch → commits → push → pull request → merge → main. counts are for the whole project to date.</div></div>
+    <div class="chain" id="chain"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-open">
+    <div class="ph"><div><div class="cap">status</div><h2 id="h-open">what is still open</h2></div>
+      <div class="sub" id="open-sub"></div></div>
+    <div class="open-grid" id="open-grid"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-sess">
+    <div class="ph"><div><div class="cap">who worked on it</div><h2 id="h-sess">Claude sessions</h2></div>
+      <div class="sub" id="sess-sub"></div></div>
+    <div id="sess-list"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-week">
+    <div class="ph"><div><div class="cap">activity</div><h2 id="h-week">what updated when, by week</h2></div>
+      <div class="sub">weeks start Monday. click a week to filter the timeline below to it.</div></div>
+    <div class="chartwrap"><svg id="weekchart" role="img" aria-label="pull requests merged and commits authored per week"></svg></div>
+    <div class="legend"><span><i style="background:var(--green)"></i>pull requests merged</span><span><i style="background:var(--azure)"></i>commits authored (all branches)</span><span><i style="background:color-mix(in srgb,var(--azure) 18%,transparent);border:1px solid var(--azure)"></i>selected week</span></div>
+  </section>
+
+  </div>
+  <div class="pane" id="pane-timeline" role="tabpanel" aria-labelledby="tab-timeline" hidden>
+  <section class="panel" aria-labelledby="h-tl">
+    <div class="ph"><div><div class="cap">timeline</div><h2 id="h-tl">how branches split off main, newest first</h2></div>
+      <div class="sub">the line on the left is main. a grey dot is where a branch was cut, and its line runs to the right in its own column. a dot ringed in the page color is its PR opening, a green dot is its merge back into main, a ✕ is a PR closed without merging, and a dashed dot is a branch tip never merged. a branch cut from another branch peels off that parents column instead. hover a row to light up its branch.</div></div>
+    <div class="tools">
+      <div class="seg" id="seg-status" role="group" aria-label="show"><button data-v="all" class="on">all</button><button data-v="merged">merged</button><button data-v="open">open</button><button data-v="closed">closed unmerged</button></div>
+      <div class="seg" id="seg-rel" role="group" aria-label="released to prod or not" hidden></div>
+      <div class="seg" id="seg-type" role="group" aria-label="type of change"></div>
+      <div class="seg" id="seg-area" role="group" aria-label="area changed"></div>
+      <input class="in-txt" id="q" type="search" placeholder="search PRs, branches" aria-label="search timeline">
+      <span id="weekchip"></span>
+      <span class="grow"></span>
+      <span class="hint" id="count"></span><span class="hint" title="click a filter to pick it; hold cmd (ctrl on Windows) and click to add or remove several in the same group. different groups combine">⌘-click picks several</span>
+      <button class="btn sm" id="expall">expand all</button><button class="btn sm" id="colall">collapse all</button>
+    </div>
+    <div class="graph" id="graph"></div>
+  </section>
+
+  </div>
+  <div class="pane" id="pane-branches" role="tabpanel" aria-labelledby="tab-branches" hidden>
+  <section class="panel" aria-labelledby="h-br">
+    <div class="ph"><div><div class="cap">branches</div><h2 id="h-br">every branch on GitHub</h2></div>
+      <div class="sub" id="br-sub"></div></div>
+    <div class="tools"><div class="seg" id="seg-br" role="group" aria-label="show branches"><button data-v="all" class="on">all</button><button data-v="unmerged">unmerged work</button><button data-v="merged">merged</button></div>
+      <input class="in-txt" id="bq" type="search" placeholder="search branch" aria-label="search branches"></div>
+    <div id="brlist" style="margin-top:10px"></div>
+  </section>
+  </div>
+  <div class="pane" id="pane-definitions" role="tabpanel" aria-labelledby="tab-definitions" hidden>
+  <section class="panel" aria-labelledby="h-def">
+    <div class="ph"><div><div class="cap">reading the page</div><h2 id="h-def">what the labels and filters mean</h2></div>
+      <div class="sub">the type and area of a pull request are worked out by the build from its branch name, title and files, not typed by a person, so treat them as a good guess. counts are pull requests.</div></div>
+    <div id="defs"></div>
+  </section>
+  </div>
+</main>
+
+<footer>
+  <div><b>what this page is:</b> a read-only picture of the git and pull request history of <span class="mono">spanner-claude-marketplace</span>, the source of truth for Spanner's Claude skills and plugins, built from GitHub and the full git log on __ASOF__. merging to main does not ship a skill: it reaches people when the org Skills Library copy is replaced from <span class="mono">dist/org-settings</span>, or when the plugin is updated. design reference: SpannerOS design system + Torque (dark default; dark · light · system).</div>
+  <div><b>read before you rely on it:</b> GitHub does not keep push times in what I could reach, so "pushed" here is the <i>last commit on the branch</i>, which is the closest honest proxy. "opened" and "merged" times come from GitHub itself. "first commit" and "last commit" are author times and can precede the push. A PR that landed without a merge commit (squashed) shows no commit list. "unmerged work" means the branch tip is not an ancestor of main, so a squash-merged branch could be mislabeled; the branches flagged here are worth a look either way.</div>
+</footer>
+
+<script id="data" type="application/json">/*DATA*/</script>
+<script>
+(function(){
+var D=JSON.parse(document.getElementById('data').textContent);
+var TZ='America/Los_Angeles';
+var $=function(s){return document.querySelector(s)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var fD=new Intl.DateTimeFormat('en-US',{timeZone:TZ,weekday:'short',month:'short',day:'numeric'});
+var fDy=new Intl.DateTimeFormat('en-US',{timeZone:TZ,month:'short',day:'numeric',year:'numeric'});
+var fT=new Intl.DateTimeFormat('en-US',{timeZone:TZ,hour:'numeric',minute:'2-digit'});
+var fTz=new Intl.DateTimeFormat('en-US',{timeZone:TZ,timeZoneName:'short'});
+function tz(d){var p=fTz.formatToParts(d).filter(function(x){return x.type==='timeZoneName'})[0];return p?p.value:'PT'}
+function dd(s){return new Date(s)}
+function day(d){return fD.format(d)}
+function tm(d){return fT.format(d)}
+function full(s){var d=dd(s);return fDy.format(d)+' · '+fT.format(d)+' '+tz(d)}
+function dkey(d){var p=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);return p}
+function dur(a,b){var ms=Math.max(0,b-a),m=Math.round(ms/60000);if(m<1)return 'under a minute';if(m<60)return m+' min';var h=m/60;if(h<48)return (Math.round(h*10)/10)+' h';return (Math.round(ms/864e5*10)/10)+' days'}
+
+var prs=D.prs, brs=D.branches, CM=D.commits;
+var prByN={};prs.forEach(function(p){prByN[p.n]=p});
+var brByName={};brs.forEach(function(b){brByName[b.name]=b});
+var merged=prs.filter(function(p){return p.mg}), openPrs=prs.filter(function(p){return p.state==='open'}), closedU=prs.filter(function(p){return !p.mg&&p.state!=='open'});
+var squashed=merged.filter(function(p){return !p.mc});
+function hashList(a){return a.map(function(p){return '#'+p.n}).join(' · ')}
+
+/* ---------- kpis ---------- */
+var lastMerge=merged.reduce(function(a,p){return p.mg>a?p.mg:a},'');
+var firstPr=prs.reduce(function(a,p){return p.cr<a?p.cr:a},'9');
+var openRefs={};openPrs.forEach(function(p){openRefs[p.ref]=1});
+var unmergedBr=brs.filter(function(b){return !b.merged&&!openRefs[b.name]});
+var k=[
+ ['',prs.length,'','pull requests','opened since '+fDy.format(dd(firstPr))],
+ ['ok',merged.length,'','merged into main','last: '+day(dd(lastMerge))+' · '+tm(dd(lastMerge))+' '+tz(dd(lastMerge))],
+ ['act',openPrs.length,'','open pull requests',openPrs.length?hashList(openPrs)+' waiting to merge':'nothing is waiting on review'],
+ ['risk',closedU.length,'','closed without merging',hashList(closedU)],
+ ['',D.meta.commits_all,'','commits, all branches',D.meta.commits_main+' of them are on main'],
+ ['',brs.length,'','branches besides main',unmergedBr.length+' hold unmerged work · '+openPrs.length+' on an open PR · '+(brs.length-unmergedBr.length-openPrs.length)+' already in main']
+];
+$('#kpis').innerHTML=k.map(function(x){return '<div class="kpi '+x[0]+'"><div class="n">'+x[1]+'</div><div class="l"><b>'+x[3]+'</b></div><div class="d">'+esc(x[4])+'</div></div>'}).join('');
+
+/* ---------- chain ---------- */
+function stage(cls,n,l,d){return '<div class="stage '+cls+'"><div class="n">'+n+'</div><b>'+l+'</b><div class="d">'+d+'</div></div>'}
+$('#chain').innerHTML=
+ stage('',brs.length,'branches','skill, feature, fix, docs and chore branches still on GitHub, besides main')+'<div class="arrow">→</div>'+
+ stage('',D.meta.commits_all,'commits','authored on those branches · '+D.meta.commits_main+' reached main')+'<div class="arrow">→</div>'+
+ stage('',D.meta.pushed,'pushed branch tips','push times are not recorded; the last-commit time stands in for them')+'<div class="arrow">→</div>'+
+ stage('',prs.length,'pull requests','one per change; each lands on main or is closed')+'<div class="arrow">→</div>'+
+ '<div class="fork">'+stage('ok',merged.length,'merged → main','a merge commit lands on main'+(squashed.length?' ('+hashList(squashed)+' squashed)':''))+stage('risk',closedU.length,'closed unmerged',hashList(closedU))+stage('act',openPrs.length,'open',openPrs.length?hashList(openPrs):'none right now')+'</div>'+
+ (D.envs&&D.envs.release?'<div class="arrow">→</div>'+(function(){var rl=D.envs.release,inProd=merged.filter(function(p){return p.rel}).length,wait=merged.length-inProd;return stage(rl.ahead?'risk':'ok',inProd,'in prod (release)','release is at '+esc(rl.h)+(rl.ahead?' · '+rl.ahead+' commit'+(rl.ahead>1?'s':'')+' on main wait to be pushed to release':' · in step with main'))})():'');
+
+/* ---------- still open ---------- */
+function openGrid(){
+ var g=[];
+ g.push(openPrs.length?'<div class="card"><h3>open pull requests <span class="chip act">'+openPrs.length+' open</span></h3>'+openPrs.map(function(p){return '<div class="item"><a href="#" class="jump mono" data-n="'+p.n+'">#'+p.n+'</a> '+esc(p.t)+'<div class="muted" style="font-size:14px"><span class="mono">'+esc(p.ref)+'</span> · opened '+full(p.cr)+'</div></div>'}).join('')+'</div>':'<div class="card ok"><h3>open pull requests <span class="chip ok">none open</span></h3><div class="muted">All '+prs.length+' pull requests are closed. '+merged.length+' merged, '+closedU.length+' closed without merging.</div></div>');
+ var items=unmergedBr.map(function(b){
+   var p=b.prs.length?prByN[b.prs[0]]:null;
+   return '<div class="item"><span class="mono">'+esc(b.name)+'</span> <span class="chip risk">'+b.ahead+' commit'+(b.ahead>1?'s':'')+' not in main</span><div class="muted" style="font-size:14px">'+(p?'PR #'+p.n+' was closed '+full(p.cx)+' without merging. ':'<span class="todo">no pull request</span> ')+'Last commit '+full(b.d)+': '+esc(b.s)+' <span class="mono">'+b.tip+'</span></div></div>'}).join('');
+ g.push('<div class="card risk"><h3>unmerged work on GitHub <span class="chip risk">'+unmergedBr.length+'</span></h3>'+items+'<div class="hint" style="margin-top:6px">your call: open a PR, or delete the branch. I have not changed anything.</div></div>');
+ var cu=closedU.map(function(p){var b=brByName[p.ref];var note=b?(b.merged?'its branch is fully in main, so the work landed another way':'its branch still has commits that are not in main'):'its branch was deleted';
+   return '<div class="item"><a href="#" class="jump mono" data-n="'+p.n+'">#'+p.n+'</a> '+esc(p.t)+'<div class="muted" style="font-size:14px">opened '+full(p.cr)+' · closed '+full(p.cx)+'. '+note+'.</div></div>'}).join('');
+ g.push('<div class="card risk"><h3>closed without merging <span class="chip risk">'+closedU.length+'</span></h3>'+cu+'</div>');
+ var done=brs.filter(function(b){return b.merged});
+ g.push('<div class="card"><h3>merged but still on GitHub <span class="chip neutral">'+done.length+'</span></h3><div class="muted">These branches are fully in main and could be deleted. I have not deleted any.</div><div style="margin-top:8px"><button class="btn sm" id="seebr">see them in the branch list</button></div></div>');
+ $('#open-grid').innerHTML=g.join('');
+ $('#open-sub').textContent='as of '+fDy.format(new Date(D.meta.asof))+'. '+(openPrs.length?openPrs.length+' pull request'+(openPrs.length>1?'s are':' is')+' open; ':'nothing is open for review; ')+'the other loose ends are old branches and '+closedU.length+' closed pull request'+(closedU.length===1?'':'s')+'.';
+}
+openGrid();
+
+/* ---------- tabs (hash: #timeline, #branches) ---------- */
+var fMD=new Intl.DateTimeFormat('en-US',{timeZone:TZ,month:'short',day:'numeric'});
+var TABS=['overview','timeline','branches','definitions'];
+function showTab(name,keepHash){
+ if(TABS.indexOf(name)<0)name='timeline';
+ TABS.forEach(function(n){var on=n===name;$('#pane-'+n).hidden=!on;var b=$('#tab-'+n);b.classList.toggle('on',on);b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1});
+ if(!keepHash){try{history.replaceState(null,'',name==='timeline'?location.pathname+location.search:'#'+name)}catch(e){}}
+ if(name==='overview'&&typeof drawWeeks==='function')drawWeeks();
+}
+$('.tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(b){showTab(b.dataset.tab);window.scrollTo({top:0})}});
+$('.tabs').addEventListener('keydown',function(e){var i=TABS.indexOf(document.activeElement.dataset.tab);if(i<0)return;if(e.key==='ArrowRight'||e.key==='ArrowLeft'){var n=TABS[(i+(e.key==='ArrowRight'?1:2))%3];showTab(n);$('#tab-'+n).focus()}});
+addEventListener('hashchange',function(){showTab((location.hash||'').slice(1),true)});
+var AS=new Date(D.meta.asof);
+$('#asof').innerHTML='data refreshed '+fDy.format(AS)+' · '+fT.format(AS)+' '+tz(AS)+' <span>(from GitHub and the git history at that time)</span>';
+$('#stamp').textContent='refreshed '+fMD.format(AS)+' · '+fT.format(AS)+' '+tz(AS);
+$('#tc-timeline').textContent=prs.length;$('#tc-branches').textContent=brs.length;
+
+/* ---------- sessions (from Claude-Session trailers in commits and PR bodies) ---------- */
+var SESS={};
+prs.forEach(function(p){(p.sessions||[]).forEach(function(id){var s=SESS[id]||(SESS[id]={id:id,prs:[],first:p.cr,last:p.mg||p.cx||p.cr});s.prs.push(p);var a=p.cr,b=p.mg||p.cx||p.cr;if(a<s.first)s.first=a;if(b>s.last)s.last=b})});
+var cowork=0,coworkPrs=[];prs.forEach(function(p){if(p.cowork){cowork+=p.cowork;coworkPrs.push(p)}});
+function rng(a,b){var x=fMD.format(dd(a)),y=fMD.format(dd(b));return x===y?x:x+' – '+y}
+function sessUrl(id){return 'https://claude.ai/code/'+id}
+function sessLink(id){return '<a href="'+sessUrl(id)+'" target="_blank" rel="noopener" class="mono">'+id.replace('session_','').slice(0,8)+'… ↗</a>'}
+(function(){
+ var l=Object.keys(SESS).map(function(k){return SESS[k]}).sort(function(a,b){return a.last<b.last?1:-1});
+ var linked=prs.filter(function(p){return (p.sessions||[]).length}).length;
+ $('#sess-sub').textContent=l.length+' Claude Code sessions are linked from '+linked+' of '+prs.length+' pull requests. A link is only known where the commit or PR carries a Claude-Session line. Cowork sessions leave no link in git, so they show as a count.';
+ var rows=l.map(function(s){
+  return '<details class="brow"><summary style="grid-template-columns:minmax(0,1fr) 120px 190px"><span class="nm"><span class="tw"></span>'+sessLink(s.id)+'</span><span class="chip neutral" style="justify-self:start">'+s.prs.length+' PR'+(s.prs.length>1?'s':'')+'</span><span class="muted">'+rng(s.first,s.last)+'</span></summary><div class="bd">'+
+   s.prs.slice().sort(function(a,b){return b.n-a.n}).map(function(p){return '<div><a href="#" class="jump mono" data-n="'+p.n+'">#'+p.n+'</a> '+esc(p.t)+'</div>'}).join('')+'</div></details>'}).join('');
+ var cw=cowork?'<div class="item"><span class="chip neutral">Cowork</span> '+cowork+' commits across '+coworkPrs.length+' pull requests were authored by a Cowork session. Cowork does not record a session link in git, so I can only count them. Open the PR rows on the timeline to see which ones.</div>':'';
+ $('#sess-list').innerHTML=(rows||'<div class="muted">No session links found.</div>')+cw;
+})();
+
+/* ---------- weekly chart ---------- */
+function monday(d){var p=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(d).split('-').map(Number);var u=new Date(Date.UTC(p[0],p[1]-1,p[2]));var w=(u.getUTCDay()+6)%7;u.setUTCDate(u.getUTCDate()-w);return u.getTime()}
+var weeks={};
+function wk(ts){var m=monday(new Date(ts));return weeks[m]||(weeks[m]={m:m,prs:0,commits:0})}
+merged.forEach(function(p){wk(p.mg).prs++});
+Object.keys(CM).forEach(function(h){wk(CM[h].d).commits++});
+var wl=Object.keys(weeks).map(Number).sort(function(a,b){return a-b});
+var w0=wl[0],wN=wl[wl.length-1],all=[];for(var t=w0;t<=wN;t+=7*864e5)all.push(weeks[t]||{m:t,prs:0,commits:0});
+var sel=null;
+function wLabel(m){var d=new Date(m);return new Intl.DateTimeFormat('en-US',{timeZone:'UTC',month:'short',day:'numeric'}).format(d)}
+function drawWeeks(){
+ var W=Math.max(720,Math.round($('.chartwrap').clientWidth||960)),L=46,R=10,T=14,B=34,n=all.length,bw=(W-L-R)/n;
+ var maxP=Math.max.apply(null,all.map(function(a){return a.prs}))||1,maxC=Math.max.apply(null,all.map(function(a){return a.commits}))||1;
+ var h1=84,h2=84,y1=T,y2=T+h1+36;
+ var s='';
+ s+='<text x="'+L+'" y="'+(y1-3)+'" style="fill:var(--mut);font-size:11px">PRs merged (max '+maxP+')</text>';
+ s+='<text x="'+L+'" y="'+(y2-3)+'" style="fill:var(--mut);font-size:11px">commits (max '+maxC+')</text>';
+ s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+(y1+h1)+'" y2="'+(y1+h1)+'" style="stroke:var(--line)"/><line x1="'+L+'" x2="'+(W-R)+'" y1="'+(y2+h2)+'" y2="'+(y2+h2)+'" style="stroke:var(--line)"/>';
+ all.forEach(function(a,i){
+  var x=L+i*bw,on=sel===a.m;
+  if(on)s+='<rect x="'+x+'" y="'+(y1-8)+'" width="'+bw+'" height="'+(y2+h2-y1+10)+'" style="fill:var(--azure);opacity:.14"/>';
+  var ph=a.prs/maxP*h1,ch=a.commits/maxC*h2;
+  var lab=wLabel(a.m)+' · '+a.prs+' merged · '+a.commits+' commits';
+  s+='<g class="bar" data-m="'+a.m+'"><title>week of '+lab+'</title><rect x="'+x+'" y="'+(y1-8)+'" width="'+bw+'" height="'+(y2+h2-y1+10)+'" style="fill:transparent"/>';
+  if(a.prs)s+='<rect x="'+(x+bw*.18)+'" y="'+(y1+h1-ph)+'" width="'+(bw*.64)+'" height="'+ph+'" rx="2" style="fill:var(--green)"/>';
+  if(a.commits)s+='<rect x="'+(x+bw*.18)+'" y="'+(y2+h2-ch)+'" width="'+(bw*.64)+'" height="'+ch+'" rx="2" style="fill:var(--azure)"/>';
+  s+='</g>';
+  if(i%2===0||i===n-1)s+='<text x="'+(x+bw/2)+'" y="'+(y2+h2+16)+'" text-anchor="middle" style="fill:var(--mut);font-size:11px">'+wLabel(a.m)+'</text>';
+ });
+ $('#weekchart').setAttribute('viewBox','0 0 '+W+' '+(y2+h2+B-8));$('#weekchart').setAttribute('width',W);$('#weekchart').setAttribute('height',y2+h2+B-8);
+ $('#weekchart').innerHTML=s;
+}
+$('#weekchart').addEventListener('click',function(e){var g=e.target.closest('.bar');if(!g)return;var m=+g.dataset.m;sel=sel===m?null:m;drawWeeks();render();if(sel){showTab('timeline');window.scrollTo({top:0})}});
+drawWeeks();var rz;addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(drawWeeks,150)});
+
+/* ---------- markdown-lite ---------- */
+function inline(s){return esc(s).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/\*([^*\s][^*]*)\*/g,'<i>$1</i>').replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')}
+function md(src){
+ var L=String(src||'').replace(/\r/g,'').split('\n'),o=[],i=0,ul=false,ol=false,pre=false,buf=[];
+ function close(){if(ul){o.push('</ul>');ul=false}if(ol){o.push('</ol>');ol=false}}
+ for(;i<L.length;i++){var l=L[i];
+  if(/^```/.test(l)){if(pre){o.push('<pre>'+esc(buf.join('\n'))+'</pre>');buf=[];pre=false}else{close();pre=true}continue}
+  if(pre){buf.push(l);continue}
+  var m;
+  if((m=/^(#{1,6})\s+(.*)$/.exec(l))){close();o.push('<h4>'+inline(m[2])+'</h4>');continue}
+  if((m=/^\s*[-*]\s+(.*)$/.exec(l))){if(!ul){close();o.push('<ul>');ul=true}o.push('<li>'+inline(m[1])+'</li>');continue}
+  if((m=/^\s*\d+[.)]\s+(.*)$/.exec(l))){if(!ol){close();o.push('<ol>');ol=true}o.push('<li>'+inline(m[1])+'</li>');continue}
+  if(!l.trim()){close();continue}
+  close();o.push('<p>'+inline(l)+'</p>');
+ }
+ if(pre)o.push('<pre>'+esc(buf.join('\n'))+'</pre>');close();return o.join('');
+}
+
+/* ---------- items: every PR plus branches that never got one ---------- */
+var items=prs.map(function(p){return Object.assign({key:String(p.n),label:'#'+p.n,isOpen:p.state==='open'},p)}).concat((D.ghost||[]).map(function(g,i){
+  var last=g.commits.reduce(function(a,c){return c.d>a?c.d:a},'');
+  return {key:'g'+i,label:'no PR',n:null,t:'Branch with no pull request',ref:g.name,base:'main',cr:null,mg:null,cx:null,tip:last,body:'',mc:null,commits:g.commits,fk:g.fk,nopr:true,tipHash:g.tip,ty:g.ty,fs:g.fs,ad:g.ad,dl:g.dl,ar:g.ar};
+}));
+var itemByKey={};items.forEach(function(it){itemByKey[it.key]=it});
+/* lane colors: one per branch, in the order branches were cut, so neighbors differ and a branch keeps its color under any filter */
+var HUES=[205,262,318,48,232,292,78,342,185,248,62,278],DLS=[0,-13,9];
+items.slice().sort(function(a,b){return dd(a.fk.ft)-dd(b.fk.ft)||(a.key<b.key?-1:1)}).forEach(function(it,i){it.cs='--c:hsl('+HUES[i%12]+' 62% calc(var(--ll) + '+DLS[Math.floor(i/12)%3]+'%))'});
+function endT(it){return it.mg||it.cx||it.tip||it.cr}
+function parentLabel(it){var p=it.fk.par;return p==='main'?'main':'#'+p+' · '+(prByN[p]?prByN[p].ref:'')}
+
+/* ---------- PR card ---------- */
+function stepEl(cls,l,v,s){return '<div class="step '+cls+'"><div class="sl">'+l+'</div><div class="sv">'+v+'</div>'+(s?'<div class="ss">'+s+'</div>':'')+'</div>'}
+function when(s){var d=dd(s);return day(d)+' · '+tm(d)+' '+tz(d)}
+function card(p){
+ var cs=p.commits.slice().sort(function(a,b){return dd(a.d)-dd(b.d)});
+ var b=brByName[p.ref];
+ var st=[];
+ var par=p.fk.par;
+ st.push(stepEl('','branched off',par==='main'?'main':'#'+par,(par==='main'?'':'<span class="mono">'+esc(prByN[par].ref)+'</span> · ')+(p.fk.F?'cut at <span class="mono">'+p.fk.F+'</span>':'')));
+ st.push(stepEl('','branch created (≈ first commit)',when(p.fk.ft),'<span class="mono">'+esc(p.ref)+'</span>'));
+ if(cs.length){
+  st.push(stepEl('act','pushed (last commit)',when(cs[cs.length-1].d),cs.length+' commit'+(cs.length>1?'s':'')+' · <span class="mono">'+cs[cs.length-1].h+'</span>'));
+ }else if(b){
+  st.push(stepEl('act','pushed (branch tip)',when(b.d),'<span class="mono">'+b.tip+'</span> · commit list not tracked for this PR'));
+ }else{ st.push(stepEl('','pushed','not available','branch deleted; no merge commit to trace')) }
+ if(p.cr)st.push(stepEl('act','pr opened',when(p.cr),'#'+p.n));
+ if(p.mg){st.push(stepEl('ok','merged',when(p.mg),p.mc?'merge commit <span class="mono">'+p.mc+'</span>':'squashed · no merge commit'));st.push(stepEl('ok','main','updated',cs.length?'+'+cs.length+' commit'+(cs.length>1?'s':''):'one squashed change'))}
+ else if(p.nopr){st.push(stepEl('risk','not merged','still on GitHub','no pull request was opened'))}
+ else if(p.isOpen){st.push(stepEl('act','open','waiting to merge','not in main yet'))}
+ else{st.push(stepEl('risk','closed unmerged',when(p.cx),'not merged into main'))}
+ var authors=Array.from(new Set(cs.map(function(c){return c.a})));
+ var end=p.mg||p.cx||p.tip||new Date().toISOString();
+ var facts='<span><b>'+p.label+'</b></span><span>head <b class="mono">'+esc(p.ref)+'</b></span><span>cut from <b class="mono">'+esc(par==='main'?'main':'#'+par)+'</b></span>'+(p.n?'<span>base <b class="mono">'+esc(p.base)+'</b></span>':'')+((p.sessions&&p.sessions.length)?'<span>Code session '+p.sessions.map(sessLink).join(' ')+'</span>':'')+(p.cowork?'<span>Cowork <b>'+p.cowork+' commit'+(p.cowork>1?'s':'')+'</b> (no link recorded)</span>':'')+'<span>type <b>'+esc(p.ty||'other')+'</b></span>'+(p.fs?'<span>changed <b>'+p.fs+' file'+(p.fs>1?'s':'')+'</b> <span style="color:var(--green)">+'+p.ad+'</span> <span style="color:var(--orange)">−'+p.dl+'</span></span><span>areas <b>'+esc((p.ar||[]).map(function(a){return a[0]+' '+a[1]}).join(' · '))+'</b></span>':'')+'<span>branch alive for <b>'+dur(dd(p.fk.ft),dd(end))+'</b></span>'+(authors.length?'<span>authors <b>'+esc(authors.join(', '))+'</b></span>':'')+(p.n?'<span><a href="https://github.com/__GH__/pull/'+p.n+'" target="_blank" rel="noopener">view on GitHub ↗</a></span>':'');
+ var desc=p.body?md(p.body):'<p class="muted">no description was written'+(p.nopr?' (there is no pull request)':' on this pull request')+'.</p>';
+ var cl=cs.length?'<details class="desc"><summary><span class="tw"></span>commits ('+cs.length+')</summary><ul class="clist">'+cs.map(function(c){return '<li><span class="mono">'+c.h+'</span><span class="muted">'+when(c.d)+'</span><span class="s">'+esc(c.s)+'</span><span class="au">'+esc(c.a)+'</span></li>'}).join('')+'</ul></details>':'';
+ return '<div class="pr-card"><h3>'+esc(p.t)+'</h3><div class="facts">'+facts+'</div><div class="flow">'+st.join('<div class="ar">→</div>')+'</div><details class="desc" open><summary><span class="tw"></span>description</summary><div class="md">'+desc+'</div></details>'+cl+'</div>';
+}
+
+/* ---------- timeline / branch graph ---------- */
+var state={status:[],q:'',ty:[],ar:[],rel:[]};   // each filter is a set; empty means all. cmd/ctrl-click adds or removes several
+var TYCOL={skill:'--green',feat:'--azure',fix:'--orange',docs:'--lblue',chore:'--mut',design:'--amber',db:'--green',refactor:'--azure',test:'--green',other:'--mut'};
+function arcell(p){var a=(p.ar||[]).slice(0,2).map(function(x){return '<span class="chip ar" title="'+esc(x[0])+(x[1]!=null?' · '+x[1]+' file'+(x[1]===1?'':'s'):'')+'">'+esc(x[0])+'</span>'}).join('');return '<span class="arc">'+a+((p.ar||[]).length>2?'<span class="chip ar" title="'+esc((p.ar||[]).map(function(x){return x[0]}).join(', '))+'">+'+((p.ar||[]).length-2)+'</span>':'')+'</span>'}
+function tychip(p){var t=p.ty||'other';return '<span class="chip ty" style="--c:var('+(TYCOL[t]||'--mut')+')" title="'+t+(p.fs?' · '+p.fs+' file'+(p.fs>1?'s':'')+' · +'+p.ad+' −'+p.dl:'')+'">'+t+'</span>'}
+var openSet={};
+function match(p){
+ var S=state.status;if(S.length&&!((S.indexOf('merged')>=0&&p.mg)||(S.indexOf('open')>=0&&p.isOpen)||(S.indexOf('closed')>=0&&!p.mg&&!p.isOpen)))return false;
+ if(state.ty.length&&state.ty.indexOf(p.ty||'other')<0)return false;
+ if(state.ar.length&&!(p.ar||[]).some(function(a){return state.ar.indexOf(a[0])>=0}))return false;
+ if(state.rel.length===1&&((state.rel[0]==='yes')!==!!p.rel))return false;
+ if(sel!==null){var inW=function(s){return s&&monday(dd(s))===sel};if(!(inW(p.fk.ft)||inW(p.cr)||inW(endT(p))))return false}
+ var q=state.q.trim().toLowerCase();
+ if(q){var h=(p.label+' '+p.t+' '+p.ref+' '+(p.mc||'')+' '+(p.ty||'other')+' '+(p.ar||[]).map(function(a){return a[0]}).join(' ')+' '+(p.rel?'released':'not released')+' '+p.commits.map(function(c){return c.h+' '+c.s}).join(' ')).toLowerCase();if(h.indexOf(q)<0)return false}
+ return true;
+}
+var KIND={rel:{chip:'',r:0},merge:{chip:'<span class="chip ok">merged</span>',r:0},close:{chip:'<span class="chip risk">closed</span>',r:0},tip:{chip:'<span class="chip risk">unmerged tip</span>',r:0},open:{chip:'<span class="chip act">opened</span>',r:1},fork:{chip:'<span class="chip neutral">branched</span>',r:2}};
+function render(){
+ var list=items.filter(match);
+ var vis={};list.forEach(function(p){vis[p.key]=p});
+ var ev=[];
+ list.forEach(function(p){
+  ev.push({k:'fork',t:dd(p.fk.ft),p:p});
+  if(p.cr)ev.push({k:'open',t:dd(p.cr),p:p});
+  if(!p.isOpen)ev.push({k:p.mg?'merge':(p.nopr?'tip':'close'),t:dd(endT(p)),p:p});
+ });
+ var RL=D.envs&&D.envs.release;
+ if(RL)ev.push({k:'rel',t:dd(RL.dep||RL.d),waiting:items.filter(function(x){return x.mg&&!x.rel}).length});
+ ev.forEach(function(e){e.r=KIND[e.k].r});
+ $('#count').textContent=list.length+' branch'+(list.length===1?'':'es')+' · '+(ev.length-(RL?1:0))+' events';
+ $('#weekchip').innerHTML=sel!==null?'<span class="chip act sel-chip">week of '+wLabel(sel)+' <button class="btn sm" id="clrwk" style="padding:0 8px;min-height:22px">clear ✕</button></span>':'';
+ var cw=$('#clrwk');if(cw)cw.onclick=function(){sel=null;drawWeeks();render()};
+ if(!list.length){$('#graph').innerHTML='<div class="empty">nothing matches.</div>';return}
+ ev.sort(function(a,b){return (b.t-a.t)||(a.r-b.r)||((a.p?a.p.key:'')<(b.p?b.p.key:'')?1:-1)});
+ var rows=[],last='',cur=null;
+ ev.forEach(function(e){var dk=dkey(e.t);if(dk!==last){cur={k:'day',t:e.t,m:0,o:0,c:0,b:0};rows.push(cur);last=dk}
+  if(e.k==='rel'){}else if(e.k==='merge')cur.m++;else if(e.k==='open')cur.o++;else if(e.k==='fork')cur.b++;else cur.c++;rows.push(e)});
+ rows.forEach(function(r,i){r.i=i});
+ var iv={};
+ rows.forEach(function(r){if(r.k==='day'||r.k==='rel')return;var o=iv[r.p.key]||(iv[r.p.key]={p:r.p});if(r.k==='fork')o.o=r.i;else if(r.k!=='open'||r.p.isOpen)o.m=r.i});
+ var arr=Object.keys(iv).map(function(n){return iv[n]}).sort(function(a,b){return a.m-b.m||b.o-a.o});
+ /* columns (Mason, 2026-10-16: #186, then #188, then open #187; #145 right of everything merged before it): ordered by when a
+    branch ENDS. A branch that merges (or closes) earlier sits nearer main; a longer-lived one sits to the right of every
+    branch that overlapped its life and ended before it. An open branch has not ended, so it goes last, and its window runs
+    from its cut to the top (now). First fit, starting just right of the last overlapping branch that ended earlier. */
+ var lanes=[];
+ arr.forEach(function(o){o.wa=o.p.isOpen?0:o.m;o.wb=o.o});
+ var clash=function(l,o){return lanes[l]&&lanes[l].some(function(q){return q.wa<=o.wb&&o.wa<=q.wb})};
+ var endKey=function(o){return o.p.isOpen?Infinity:+dd(endT(o.p))};
+ var assigned=[];
+ arr.slice().sort(function(a,b){var x=endKey(a),y=endKey(b);return x===y?(dd(a.p.fk.ft)-dd(b.p.fk.ft)||a.m-b.m):(x<y?-1:1)}).forEach(function(o){
+  var l=0;assigned.forEach(function(q){if(q.wa<=o.wb&&o.wa<=q.wb&&q.lane>=l)l=q.lane+1});
+  while(clash(l,o))l++;
+  (lanes[l]=lanes[l]||[]).push(o);o.lane=l;assigned.push(o)});
+ // on a phone the columns share ~76px, however many there are (13px apart at most, 4 at least)
+ var narrow=matchMedia('(max-width:700px)').matches;
+ var nl=lanes.length,X0=narrow?22:32,DX=narrow?Math.max(4,Math.min(13,Math.floor(76/Math.max(1,nl)))):13,NY=23;
+ function lx(o){return X0+o.lane*DX}
+ $('#graph').style.setProperty('--gw',(X0+nl*DX+8)+'px');
+ var out=['<div class="ev"><div class="gut"><div class="rail" style="top:22px"></div><div class="nd merge" style="top:15px"></div></div><div class="mainlbl"><b>main</b> <span class="muted">· newest at the top. each branch peels off to the right where it was cut and rejoins main at its merge.</span></div></div>'];
+ rows.forEach(function(r){
+  var lines='';
+  arr.forEach(function(o){
+   if(!(o.m<=r.i&&r.i<=o.o))return;
+   var x=lx(o),k=o.p.key,mg=!!o.p.mg,cls=mg?'m':'x',isTop=r.i===o.m,isBot=r.i===o.o;
+   var top=isTop?(mg?NY+12:NY):0,bot=isBot?'calc(100% - '+(NY-12)+'px)':'0';
+   lines+='<div class="ln '+cls+'" data-k="'+k+'" style="'+o.p.cs+';left:'+x+'px;top:'+top+'px;bottom:'+bot+'"></div>';
+   if(isTop&&mg)lines+='<div class="el tr '+cls+'" data-k="'+k+'" style="'+o.p.cs+';left:11px;width:'+(x-11+3)+'px;top:'+(NY-1)+'px"></div>';
+   if(isBot){
+    var pp=o.p.fk.par,px=11;
+    if(pp!=='main'&&iv[String(pp)])px=lx(iv[String(pp)])-1+1;
+    if(pp==='main')px=11;
+    if(px>x)lines+='<div class="el bl '+cls+'" data-k="'+k+'" style="'+o.p.cs+';left:'+x+'px;width:'+(px-x+2)+'px;top:'+(NY-13)+'px"></div>';
+    else lines+='<div class="el br '+cls+'" data-k="'+k+'" style="'+o.p.cs+';left:'+px+'px;width:'+(x-px+3)+'px;top:'+(NY-13)+'px"></div>';
+   }
+  });
+  if(r.k==='day'){
+   out.push('<div class="dayh"><div class="gut"><div class="rail"></div>'+lines+'</div><div class="dl">'+day(r.t)+'<span>'+[r.m?r.m+' merged':'',r.o?r.o+' opened':'',r.b?r.b+' branched':'',r.c?r.c+' not merged':''].filter(Boolean).join(' · ')+'</span></div></div>');
+   return;
+  }
+  if(r.k==='rel'){
+   out.push('<div class="ev relrow"><div class="gut"><div class="rail"></div>'+lines+'<div class="nd rel"></div></div><div class="relbar"><span class="relk">RELEASE · PROD</span><b>production runs from here down</b><span class="mono">'+esc(RL.h)+'</span><span title="'+(RL.dep?'when Vercel deployed this commit to Production (GitHub deployment record)':'the time of the last commit in release; the deploy time could not be read')+'">released '+fMD.format(r.t)+' · '+tm(r.t)+'</span>'+(r.waiting?'<span class="wait">▲ '+r.waiting+' merge'+(r.waiting>1?'s':'')+' on main, not in prod yet</span>':'<span class="sync">✓ main and release are in step</span>')+'</div></div>');
+   return;
+  }
+  var p=r.p,id=p.key+'-'+r.k,o=iv[p.key],x=lx(o);
+  var node;
+  if(r.k==='merge')node='<div class="nd merge" data-k="'+p.key+'"></div>';
+  else if(r.k==='open')node='<div class="nd open" data-k="'+p.key+'" style="'+p.cs+';left:'+(x-6)+'px"></div>';
+  else if(r.k==='fork')node='<div class="nd cut" data-k="'+p.key+'" style="'+p.cs+';left:'+(x-4)+'px"></div>';
+  else if(r.k==='tip')node='<div class="nd tip" data-k="'+p.key+'" style="left:'+(x-6)+'px"></div>';
+  else node='<div class="nd close" data-k="'+p.key+'" style="left:'+(x-6)+'px">✕</div>';
+  var isOpen=!!openSet[id];
+  out.push('<div class="ev" data-key="'+p.key+'" id="ev-'+id+'"><div class="gut"><div class="rail"></div>'+lines+node+'</div><div style="min-width:0"><button class="evh" data-id="'+id+'" data-key="'+p.key+'" aria-expanded="'+isOpen+'"><span class="tag" style="'+p.cs+'" title="'+esc(p.label+' · '+p.ref)+'"><b>'+(p.n?'#'+p.n:'no PR')+'</b> '+esc(p.ref)+'</span><span class="tm">'+tm(r.t)+'</span><span>'+KIND[r.k].chip+'</span><span class="tyc">'+tychip(p)+'</span>'+arcell(p)+'<span class="ti">'+esc(r.k==='fork'?'cut from '+(p.fk.par==='main'?'main':'#'+p.fk.par+' ('+(prByN[p.fk.par]?prByN[p.fk.par].ref:'')+')')+' · '+p.t:p.t)+'</span></button>'+(isOpen?'<div class="evb">'+card(p)+'</div>':'')+'</div></div>');
+ });
+ $('#graph').innerHTML=out.join('');
+}
+$('#graph').addEventListener('click',function(e){
+ var b=e.target.closest('.evh');if(!b)return;var id=b.dataset.id,host=b.parentNode;
+ if(openSet[id]){delete openSet[id];var x=host.querySelector('.evb');if(x)x.remove();b.setAttribute('aria-expanded','false')}
+ else{openSet[id]=1;var d=document.createElement('div');d.className='evb';d.innerHTML=card(itemByKey[b.dataset.key]);host.appendChild(d);b.setAttribute('aria-expanded','true')}
+});
+var hk=null;
+function setHl(g,k){[].forEach.call(g.querySelectorAll('.hl'),function(x){x.classList.remove('hl')});hk=k;g.classList.toggle('hov',!!k);
+ if(k)[].forEach.call(g.querySelectorAll('[data-k="'+k+'"],.ev[data-key="'+k+'"]'),function(x){x.classList.add('hl')})}
+$('#graph').addEventListener('mouseover',function(e){var d=e.target.closest('[data-k]');var r=e.target.closest('.ev[data-key]');var k=d?d.dataset.k:(r?r.dataset.key:null);if(k!==hk)setHl(this,k)});
+$('#graph').addEventListener('mouseleave',function(){setHl(this,null)});
+$('#graph').addEventListener('focusin',function(e){var r=e.target.closest('.ev[data-key]');if(r)setHl(this,r.dataset.key)});
+$('#graph').addEventListener('focusout',function(){setHl(this,null)});
+function buildTypeFilters(){
+ var c={},a={};items.forEach(function(p){var t=p.ty||'other';c[t]=(c[t]||0)+1;(p.ar||[]).forEach(function(x){a[x[0]]=(a[x[0]]||0)+1})});
+ var order=Object.keys(c).sort(function(x,y){return c[y]-c[x]});
+ $('#seg-type').innerHTML='<button data-v="all"'+''+'>all types</button>'+order.map(function(t){return '<button data-v="'+t+'"'+''+'>'+t+' <span class="cnt">'+c[t]+'</span></button>'}).join('');
+ var ak=Object.keys(a).sort(function(x,y){return a[y]-a[x]});
+ $('#seg-area').innerHTML='<button data-v="all"'+''+'>all areas</button>'+ak.map(function(k){return '<button data-v="'+k+'"'+''+'>'+k+' <span class="cnt">'+a[k]+'</span></button>'}).join('');
+}
+function paintSegs(){[['seg-status','status'],['seg-rel','rel'],['seg-type','ty'],['seg-area','ar']].forEach(function(x){var a=state[x[1]];[].forEach.call($('#'+x[0]).children,function(b){var v=b.dataset.v;b.classList.toggle('on',v==='all'?a.length===0:a.indexOf(v)>=0)})})}
+function bindSeg(id,key){$('#'+id).addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var v=b.dataset.v,a=state[key];
+ if(v==='all')state[key]=[];else if(e.metaKey||e.ctrlKey||e.shiftKey){var i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v)}else state[key]=[v];
+ paintSegs();render()})}
+bindSeg('seg-status','status');bindSeg('seg-rel','rel');bindSeg('seg-type','ty');bindSeg('seg-area','ar');
+function buildRelFilter(){
+ if(!(D.envs&&D.envs.release)){$('#seg-rel').style.display='none';return}   // no release branch in this repo
+ var y=items.filter(function(p){return p.rel}).length,n=items.length-y;
+ $('#seg-rel').innerHTML=[['all','any release status',''],['yes','released',y],['no','not released',n]].map(function(x){return '<button data-v="'+x[0]+'"'+''+' title="'+(x[0]==='yes'?'merged, and the merge is in the release branch (live in prod)':x[0]==='no'?'open, closed, or merged but not pushed to release yet':'')+'">'+x[1]+(x[2]!==''?' <span class="cnt">'+x[2]+'</span>':'')+'</button>'}).join('');
+}
+buildRelFilter();
+buildTypeFilters();paintSegs();
+function drawDefs(){
+ var tc={},ac={};items.forEach(function(p){var t=p.ty||'other';tc[t]=(tc[t]||0)+1;(p.ar||[]).forEach(function(x){ac[x[0]]=(ac[x[0]]||0)+1})});
+ var TY=[['skill','A change to what a skill or plugin says or does.','Branch skill/ or brand/, a title starting skill:, or, with no other clue, a PR that touches only files inside plugins/.'],
+  ['feat','A new capability, such as a new skill, hook or script.','Chosen when the branch starts feat/, the title starts feat:, or the title opens with a verb such as add, build, create, implement, show, move, make, support or enable.'],
+  ['fix','A correction to something that was wrong.','Branch fix/, bugfix/ or hotfix/, a title starting fix:, or a title whose first word is fix, bug, repair, correct, patch or revert.'],
+  ['docs','Documentation only.','Branch docs/, a title starting docs:, a title whose first word is docs, document, readme or runbook, or a PR that touches nothing but docs/ and top-level .md files.'],
+  ['chore','Upkeep that does not change what the product does.','Branch chore/, ci/, build/ or deps/, or a PR that touches only scripts/, CI workflows and config files.'],
+  ['refactor','Restructuring or speed-ups that change no behaviour.','Branch refactor/ or perf/.'],
+  ['test','Tests.','Branch test/ or tests/.'],
+  ['other','No clue in the name, title or files.','Anything the rules above could not place.']];
+ var AR=[['<i>skill name</i>','One skill. Every skill gets its own area, named after its folder.','files under plugins/&lt;plugin&gt;/skills/&lt;skill&gt;/'],
+  ['<i>plugin name</i>','A plugin\'s own files outside its skills: its manifest, hooks and scripts (spanner-security\'s hooks, for example).','other files under plugins/&lt;plugin&gt;/'],
+  ['scripts','Command-line tools: the org export and this page\'s builder.','files under scripts/'],
+  ['docs','Written documentation: the README and the skills runbook.','top-level .md files and docs/'],
+  ['config','The marketplace manifest and top-level settings.','.claude-plugin/ and top-level files that are not markdown'],
+  ['other','Any other folder.','anything not listed above']];
+ var ARN={};AR.forEach(function(a){ARN[a[0]]=1});
+ var row=function(name,col,count,what,how){return '<dt><span class="chip ty" style="--c:var('+col+')">'+name+'</span> <span class="cnt">'+(count||0)+'</span></dt><dd>'+what+(how?'<span class="muted">'+how+'</span>':'')+'</dd>'};
+ var h='<h3 class="defh">type: what kind of change</h3><div class="hint">Decided in this order: the branch prefix, then a "type:" at the start of the title, then the first word of the title, then the files the PR touched.</div><dl class="defs">'+TY.map(function(t){return row(t[0],TYCOL[t[0]]||'--mut',tc[t[0]],t[1],t[2])}).join('')+'</dl>';
+ h+='<h3 class="defh">area: which part of the repository changed</h3><div class="hint">A PR can touch several areas; it counts once in each. The filter shows a PR if it touched any area you pick.</div><dl class="defs">'+AR.map(function(a){return row(a[0],'--azure',a[0].charAt(0)==='<'?Object.keys(ac).filter(function(k){return !ARN[k]}).length+' named':ac[a[0]],a[1],a[2])}).join('')+'</dl>';
+ var T=[['opened','The pull request was created on GitHub. The time is exact.'],
+  ['branched','Work on the branch began. GitHub does not record when a branch is created, so this is the earlier of the first commit\'s author time and the PR opening: an estimate.'],
+  ['merged','The pull request was merged into main. The time is exact.'],
+  ['closed','The pull request was closed without merging.'],
+  ['unmerged tip','A branch with commits that were never merged and has no pull request.'],
+  ['columns','The line on the left is main. Each branch gets a column to its right; branches that end earlier sit nearer main, longer-lived branches sit to the right of those that ended before them, and open branches sit furthest right.']];
+ h+='<h3 class="defh">states and terms</h3><dl class="defs">'+T.map(function(t){return '<dt><span class="chip neutral">'+t[0]+'</span></dt><dd>'+t[1]+'</dd>'}).join('')+'</dl>';
+ h+='<h3 class="defh">filters</h3><dl class="defs"><dt><span class="chip neutral">click</span></dt><dd>Picks that one value in its group (status, type or area). "all" clears the group.</dd><dt><span class="chip neutral">cmd-click</span></dt><dd>Adds or removes a value, so you can pick several in the same group (ctrl-click on Windows). Values in one group are alternatives (skill or fix); different groups combine (fix and spanner-meeting-notes).</dd><dt><span class="chip neutral">search</span></dt><dd>Matches the title, branch, commit messages, type and area.</dd></dl>';
+ $('#defs').innerHTML=h;
+}
+drawDefs();
+var qt;$('#q').addEventListener('input',function(){clearTimeout(qt);var v=this.value;qt=setTimeout(function(){state.q=v;render()},160)});
+$('#expall').onclick=function(){var shown=[].slice.call(document.querySelectorAll('.evh'));if(shown.length>80&&!window.__expOK){window.__expOK=1;this.textContent='expand '+shown.length+' rows? click again';return}this.textContent='expand all';shown.forEach(function(b){openSet[b.dataset.id]=1});render()};
+$('#colall').onclick=function(){openSet={};render()};
+document.addEventListener('click',function(e){
+ var j=e.target.closest('.jump');if(j){e.preventDefault();var key=j.dataset.key||String(j.dataset.n);var p=itemByKey[key];showTab('timeline');state.status=[];state.q='';state.ty=[];state.ar=[];state.rel=[];buildTypeFilters();buildRelFilter();paintSegs();sel=null;$('#q').value='';var kind=p.mg?'merge':(p.nopr?'tip':(p.isOpen?'open':'close'));var id=key+'-'+kind;openSet[id]=1;drawWeeks();render();var el=document.getElementById('ev-'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}
+ if(e.target.id==='seebr'){bstate.status='merged';[].forEach.call($('#seg-br').children,function(x){x.classList.toggle('on',x.dataset.v==='merged')});renderBr();showTab('branches');window.scrollTo({top:0})}
+});
+render();
+
+/* ---------- branches ---------- */
+var bstate={status:'all',q:''};
+// crossing the phone width re-draws the timeline with the other column spacing
+try{matchMedia('(max-width:700px)').addEventListener('change',function(){render()})}catch(e){}
+function renderBr(){
+ var q=bstate.q.trim().toLowerCase();
+ var l=brs.filter(function(b){return (bstate.status==='all'||(bstate.status==='merged')===b.merged)&&(!q||b.name.toLowerCase().indexOf(q)>=0)}).sort(function(a,b){return (a.merged-b.merged)||(dd(b.d)-dd(a.d))});
+ $('#br-sub').textContent=brs.length+' branches besides main. '+unmergedBr.length+' hold work that is not in main; the rest are merged and still listed. "last commit" stands in for the push time.';
+ $('#brlist').innerHTML=l.length?l.map(function(b){
+  var chip=b.merged?'<span class="chip ok">in main</span>':openRefs[b.name]?'<span class="chip act">open PR</span>':'<span class="chip risk">'+b.ahead+' not in main</span>';
+  var gi=(D.ghost||[]).map(function(g){return g.name}).indexOf(b.name);var prl=gi>=0?'<a href="#" class="jump mono" data-key="g'+gi+'">graph</a>':b.prs.length?b.prs.map(function(n){return '<a href="#" class="jump mono" data-n="'+n+'">#'+n+'</a>'}).join(' '):'<span class="todo">no PR</span>';
+  return '<details class="brow"><summary><span class="nm"><span class="tw"></span>'+esc(b.name)+'</span>'+chip+'<span>'+prl+'</span><span class="muted">'+full(b.d)+'</span><span class="mono muted">'+b.tip+'</span></summary><div class="bd"><div><b style="color:var(--tx)">tip commit</b> <span class="mono">'+b.tip+'</span>: '+esc(b.s)+'</div><div>last commit '+full(b.d)+' · '+b.ahead+' commit'+(b.ahead===1?'':'s')+' ahead of main, '+b.behind+' behind</div>'+(b.prs.length?'<div>pull request'+(b.prs.length>1?'s':'')+': '+b.prs.map(function(n){var p=prByN[n];return '#'+n+' '+esc(p.t)+' ('+(p.mg?'merged '+when(p.mg):'closed unmerged '+when(p.cx))+')'}).join(' · ')+'</div>':'<div>no pull request was ever opened from this branch.</div>')+'</div></details>'}).join(''):'<div class="empty">no branches match.</div>';
+}
+$('#seg-br').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;bstate.status=b.dataset.v;[].forEach.call(this.children,function(x){x.classList.toggle('on',x===b)});renderBr()});
+$('#bq').addEventListener('input',function(){bstate.q=this.value;renderBr()});
+renderBr();
+showTab((location.hash||'').slice(1),true);
+/* ---------- stays current: shows how old the data is, and reloads itself when you are idle so a republished page appears ---------- */
+(function(){
+ var KEY='gf-auto',SK='gf-state',on=true,cb=$('#autoreload'),last=Date.now(),hiddenAt=0;
+ try{on=localStorage.getItem(KEY)!=='off'}catch(e){}
+ cb.checked=on;cb.onchange=function(){on=cb.checked;try{localStorage.setItem(KEY,on?'on':'off')}catch(e){}};
+ ['pointerdown','keydown','wheel','touchstart','mousemove'].forEach(function(ev){addEventListener(ev,function(){last=Date.now()},{passive:true})});
+ function save(){try{sessionStorage.setItem(SK,JSON.stringify({s:state.status,t:state.ty,a:state.ar,r:state.rel,q:state.q,y:window.scrollY,h:location.hash}))}catch(e){}}
+ try{var st=JSON.parse(sessionStorage.getItem(SK)||'null');sessionStorage.removeItem(SK);/* one-shot: only the idle auto-reload that saved it restores it; opening or reloading the page by hand starts with no filters */if(st&&st.h===(location.hash||'')){var arr=function(v){return Array.isArray(v)?v:[]};state.status=arr(st.s);state.ty=arr(st.t);state.ar=arr(st.a);state.rel=arr(st.r);state.q=st.q||'';$('#q').value=state.q;
+  buildTypeFilters();buildRelFilter();paintSegs();render();setTimeout(function(){window.scrollTo(0,st.y||0)},60)}}catch(e){}
+ function age(){var m=Math.round((Date.now()-AS.getTime())/60000);var t=m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago';$('#stamp').textContent='refreshed '+fMD.format(AS)+' · '+fT.format(AS)+' '+tz(AS)+' ('+t+')'}
+ age();setInterval(age,30000);
+ setInterval(function(){if(on&&document.visibilityState==='visible'&&Date.now()-last>90000){save();location.reload()}},30000);
+ document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')hiddenAt=Date.now();else if(on&&hiddenAt&&Date.now()-hiddenAt>120000){save();location.reload()}});
+})();
+
+/* ---------- theme ---------- */
+var ts=$('#themesel');try{ts.value=document.documentElement.getAttribute('data-pref')||'dark'}catch(e){}
+function applyTheme(){var p=ts.value,t=p==='system'?(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):p;document.documentElement.setAttribute('data-theme',t)}
+ts.addEventListener('change',function(){try{localStorage.setItem('sos-os-theme',ts.value)}catch(e){}applyTheme()});
+})();
+</script>
