@@ -71,24 +71,38 @@ here rather than in everyone's context.
 If your plan supports per-group targeting, use it: give the engineering group the build skills by
 default instead of making them self-install.
 
+## This repo is private
+It holds Spanner's internal playbook (the security standard, the operating model, SpannerOS schema
+and design rules), so it is private to the `spanner-product-dev` org. Two ways to get the plugins:
+
+- **The org library (preferred).** An org owner adds this repo under claude.ai → Organization settings
+  → Plugins & skills → Add → *Sync from GitHub*, after installing the Claude GitHub App on it, and sets
+  `spanner-security` to **Required**. Members need no GitHub account or git credentials. This route
+  only accepts private or internal repos.
+- **Straight from GitHub (below).** Claude Code clones the repo with your own git credentials: an SSH
+  key, or the gh CLI over HTTPS. So you need read access to the org, and once per Mac:
+  `gh auth login`, then `gh auth setup-git`. Without that, adding the marketplace fails.
+
 ## For teammates — install (per user)
 ```
 /plugin marketplace add spanner-product-dev/spanner-claude-marketplace
 /plugin install spanner-security@spanner
 ```
+Private marketplaces don't auto-update by default: turn it on in `/plugin` → Marketplaces.
 
-## For the org — enforce for everyone (recommended)
+## For the org — enforce for everyone
 Push the plugin to every machine via Claude Code **managed settings** so no one has to install it by
-hand. `install-spanner-security.sh` in this repo writes that file; it needs sudo and is run once per
-Mac:
+hand. `install-spanner-security.sh` in this repo writes that file (with auto-update on); it needs sudo,
+is run once per Mac, and warns if that Mac's user can't read the repo:
 
 ```
-curl -fsSL https://raw.githubusercontent.com/spanner-product-dev/spanner-claude-marketplace/main/install-spanner-security.sh | sudo bash
+gh api repos/spanner-product-dev/spanner-claude-marketplace/contents/install-spanner-security.sh -H "Accept: application/vnd.github.raw" | sudo bash
 ```
 
-**That reaches only the Macs it is run on.** The alternative, which needs nobody's terminal, is to
-register this marketplace under claude.ai → Organization settings → Plugins → *Organization library*
-and set `spanner-security` to **Required**. Prefer that. See `SKILLS-RUNBOOK.md` §8.2 — as of
+(The old `curl … raw.githubusercontent.com` line no longer works: that host doesn't serve private repos.)
+
+**That reaches only the Macs it is run on, and only users with GitHub access.** The org library above
+needs nobody's terminal or GitHub account. Prefer that. See `SKILLS-RUNBOOK.md` §5.2 — as of
 2026-09-18 the secret gate is confirmed on exactly one machine, which is not what the security
 standard claims.
 

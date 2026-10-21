@@ -384,14 +384,17 @@ Leave `spanner-security@spanner` — that is the secret gate, and it should be o
 file exists. It is on Mason's Mac. Whether it is on anyone else's depends on whether they ran
 `install-spanner-security.sh`.
 
-Ask, and if the answer is no, either have people run it:
+Ask, and if the answer is no, either have people run it. The repo is private, so this needs a GitHub
+account with access to the org and `gh auth login` first (the old `curl … raw.githubusercontent.com`
+line stopped working when the repo went private):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/spanner-product-dev/spanner-claude-marketplace/main/install-spanner-security.sh | sudo bash
+gh api repos/spanner-product-dev/spanner-claude-marketplace/contents/install-spanner-security.sh -H "Accept: application/vnd.github.raw" | sudo bash
 ```
 
-…or register `spanner-security` in claude.ai → Organization settings → **Plugins** → *Organization
-library* and set it to **Required**, which does not need anyone's terminal.
+…or register this repo in claude.ai → Organization settings → **Plugins & skills** → Add → *Sync from
+GitHub* (install the Claude GitHub App on the repo first) and set `spanner-security` to **Required**.
+That needs nobody's terminal and no GitHub account, and it only accepts private or internal repos.
 
 The security standard says *no secrets in code, ever*. A gate that runs on one laptop is not that.
 
