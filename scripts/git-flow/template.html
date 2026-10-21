@@ -51,12 +51,15 @@ a{color:var(--azure)}
 .brand>*{vertical-align:baseline}
 .brand i{font-style:normal;color:var(--hdr-accent)}
 .brand .btitle{font-family:Inter,'Helvetica Neue',sans-serif;font-size:22px;font-weight:400;letter-spacing:.04em}
+.brand .brepo{font-family:Inter,'Helvetica Neue',sans-serif;font-size:22px;font-weight:400;letter-spacing:.02em;color:var(--hdr-link);margin-left:12px}
+.cap a.repo{color:inherit;text-decoration:none;border-bottom:1px solid currentColor}
+.cap a.repo:hover{color:var(--azure)}
 .brand .bsep{display:inline-block;width:0;height:28px;border-left:1px solid var(--hdr-accent);margin:0 24px -2.9px}
 .hdrctl{display:flex;gap:10px;align-items:center;flex:0 0 auto}
 .hdrctl label{font-size:12.5px;color:var(--hdr-link);letter-spacing:.06em;text-transform:uppercase;font-weight:700}
 .hdrctl select{background:var(--hdr-ctl);color:var(--hdr-tx);border:1px solid var(--hdr-line);border-radius:var(--r-btn);padding:7px 10px;font-size:15px;min-height:36px}
 .hdrctl select option{color:#1D2B37}
-@media (max-width:620px){.tbar .in{padding:0 16px}.brand{font-size:29.7px}.brand .btitle{font-size:17px}.brand .bsep{height:19.6px;margin:0 14px -2px}.hdrctl label{display:none}}
+@media (max-width:620px){.tbar .in{padding:0 16px}.brand{font-size:29.7px}.brand .btitle{font-size:17px}.brand .bsep{height:19.6px;margin:0 14px -2px}.brand .brepo{display:none}.hdrctl label{display:none}}
 
 main{padding:24px;display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
 @media (max-width:620px){main{padding:16px}}
@@ -268,14 +271,14 @@ footer{padding:8px 24px 40px;color:var(--mut);font-size:13.5px;display:grid;gap:
 .sel-chip{display:inline-flex;gap:6px;align-items:center}
 </style>
 <header class="tbar"><div class="in">
-  <div class="brand">spanner <i>os</i><span class="bsep"></span><span class="btitle">git flow</span></div>
+  <div class="brand">spanner <i>os</i><span class="bsep"></span><span class="btitle">git flow</span><span class="brepo">spanner-claude-marketplace</span></div>
   <div class="hdrctl"><label for="themesel">theme</label>
     <select id="themesel" aria-label="theme"><option value="dark">dark</option><option value="light">light</option><option value="system">system</option></select></div>
 </div></header>
 
 <main>
   <div>
-    <div class="cap">spanner-claude-marketplace · pull request history</div>
+    <div class="cap"><a class="repo" href="https://github.com/__GH__" target="_blank" rel="noopener" title="open the repository on GitHub">spanner-claude-marketplace ↗</a> · pull request history</div>
     <h1>branches, commits, pull requests and merges</h1>
     <p class="q">what landed when, and what is still open. every time is Pacific. click any row to expand it.</p>
     <p class="asof" id="asof"></p>
