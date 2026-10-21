@@ -497,7 +497,7 @@ default is a blue link, not an embed.
 **Action items — 5-column Notion table + two carry-over tables.** Render action
 items as a Notion `<table>` with a `<colgroup>` so widths stick:
 
-- **Current meeting's table — 5 columns, in order: Owner | Status | Action | Claude Notes / sources | Human Notes** (Mason's direction, 2026-07-24). The `Claude Notes / sources` column holds source links (Slack permalink, capture URL, prompt-library/subpage link). The final **`Human Notes`** column is left **empty** for the human to fill in later — always include it as an empty trailing column.
+- **Current meeting's table — 5 columns, in order: Owner | Status | Action | Claude Notes / sources | Human Notes** (Mason's direction, 2026-07-24). The `Claude Notes / sources` column holds source links (Slack permalink, capture URL, prompt-library row/subpage link). The final **`Human Notes`** column is left **empty** for the human to fill in later — always include it as an empty trailing column.
 - Widths: Owner `90`, Status `110` (narrow); Action `380`, Claude Notes `380` (wide); Human Notes: add a bare `<col>` (no width) as the 5th column.
 - For the current meeting's new items, leave **Status** blank (or a short state like Blocked / Gated).
 - Keep each `Claude Notes` cell to a sentence or two plus its links — the brevity rule applies inside table cells too.
@@ -594,21 +594,37 @@ section headed **"🤖 Claude AI Answers to Open Questions Above"**.
   specific Notion block — but block-anchor links need per-block IDs the Notion MCP
   may not expose; when it doesn't, rely on the numbered footnotes + the subpage link
   below rather than faking anchors.
-- **Actionable answers → the cumulative Prompt Library (not a per-meeting subpage).**
+- **Actionable answers → the Prompt Library database (one row per prompt).**
   When an answer implies work Claude could do (draft copy, code snippet, schema,
-  reproduce a page), **append** the **full written-out prompt** to the single running
-  page **`🤖 Claude — SpannerOS Prompt Library`** (under the SpannerOS hub) under a new
-  `# <date> — <meeting>` section (newest on top), each prompt with a to-do checkbox and
-  a link back to its source meeting. Do NOT spawn a new subpage per meeting (Mason
-  changed this 2026-07-24). Make each prompt thorough: **Goal / Context / step-by-step /
-  Constraints / Output / Inputs-to-fill**. Link each actionable answer to the library
-  (`▶ Actionable: <blue>[SpannerOS Prompt Library](library-url)</blue>` — page-level link;
-  block anchors aren't reliable via MCP).
+  reproduce a page), **create one row** in the Notion database
+  **`🤖 Claude — SpannerOS Prompt Library`** (database
+  `ccc63b83-0f2c-4762-82b0-e60b3b9426dc`, data source
+  `collection://65b8e1c4-4e97-4db8-9ff3-5ef055a9f903`, under the SpannerOS hub). Since
+  2026-10-21 this replaces the old single page, which is archived: **never append to the
+  old page** and never create a per-meeting subpage. Fetch the data source first and use
+  its exact property names. Properties:
+  - `Name` (title): the prompt's short name, without a "Prompt N —" prefix.
+  - `Meeting` (select): Staffing Strategy, SpannerOS Sync, SpannerOS Standup, SpannerOS
+    Design Review, Forge Working Session, TPL Sync, Weekly Team Meeting, Tin K5 Exec
+    Review, Website Standup, or Other.
+  - `Meeting date` (date): `date:Meeting date:start` as `YYYY-MM-DD`, `date:Meeting date:is_datetime` = 0.
+  - `Source notes` (url): the meeting's notes page.
+  - `Area` (select): Staffing, Forge & BD, Planner & Harvest, SpannerOS build, Website &
+    SEO, Camp Loma, Client programs, or Team ops. Pick the closest one.
+  - `Status` (select): `Not run` for a new prompt.
+  - `Run note` (text): leave empty until the prompt has been run.
+
+  The row body holds the full written-out prompt: **Goal / Context / Steps / Constraints /
+  Output / Inputs to fill**, thorough enough to paste into Claude. The rows replace the old
+  checkboxes: mark one run by setting `Status` to `Run` and writing the date and output
+  link in `Run note`. Link each actionable answer to its row (`▶ Actionable:
+  <blue>[prompt name](row-url)</blue>`), or to the database when several prompts apply.
+  Add a new `Meeting` or `Area` option only when none fits, and say so in the reply.
   - If the meeting's real output is a document you're also writing (an SOP, a spec),
     that document replaces the prompt — say so rather than adding a prompt to write
     the thing you just wrote.
 - **List the meeting's prompts as bullets** near the end of the notes (one prompt per
-  bulleted line, each linking to the library) — never an inline `·`-separated run
+  bulleted line, each linking to its row in the Prompt Library database) — never an inline `·`-separated run
   (Mason, 2026-07-24).
 - **Open Questions — Need Your Input (for Claude):** the questions you could NOT
   resolve, in a single `<callout icon="❓">` block, followed by the numbered
