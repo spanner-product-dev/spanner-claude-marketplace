@@ -117,7 +117,7 @@ body {
 
 ## 3 · Theming rules
 
-- **Dark is the default everywhere** — the shell, sign-in, /planning and time entry (Mason, 2026-10-07; PR #113). `<html data-theme="dark">` unless the person has chosen otherwise.
+- **Dark is the default everywhere** — the shell, sign-in, /planning and time entry (Mason, 2026-10-07; spanner-planner PR #113). `<html data-theme="dark">` unless the person has chosen otherwise.
 - The choice is a **three-way select, not a toggle**: dark ☾ · light ☀ · system ◐ ("follow the system" tracks `prefers-color-scheme` live). It sits at the right of the top bar.
 - One choice follows the person across every screen: `localStorage` key **`sos-os-theme`** (values `dark` / `light` / `system`). The old key `sos-torque-theme` is still read as a fallback when nothing newer is stored, and is folded into the new key the next time anyone picks. App code: `lib/theme-pref.ts`.
 - A **pre-paint boot script** sets `data-theme` before the first frame, so nobody sees a flash of the wrong theme. It must repeat the same read-and-resolve logic as `lib/theme-pref.ts`; keep the two in step.
