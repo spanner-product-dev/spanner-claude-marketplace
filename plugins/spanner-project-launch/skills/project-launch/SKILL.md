@@ -8,7 +8,7 @@ description: >
   "automate project setup", "run the launch checklist", or references the BD-PD launch process.
   This skill creates Notion pages, Project Tracker entries, Google Drive folders and templates,
   the __SUMMARY forecast row, the Harvest project (via the planner's Provision script) and draft
-  deposit invoice, the SpannerOS project (staging, imported from Harvest), Slack channels and the #spanner-team win post, Google Calendar
+  deposit invoice, the SpannerOS project (prod, imported from Harvest), Slack channels and the #spanner-team win post, Google Calendar
   meetings, and notification email drafts — then
   provides a punch list for the remaining manual steps.
 ---
@@ -21,7 +21,7 @@ for the steps that still need a human.
 
 ## Before You Start (read once per session)
 
-**Connectors needed:** Notion, Google Drive, Slack, Google Calendar, Gmail, Harvest (MCP), Supabase (MCP, for
+**Connectors needed:** Notion, Google Drive, Slack, Google Calendar, Gmail, Harvest (MCP), Supabase (read-only via db-read.sh, for
 SpannerOS staging) and the `~/Developer/spanner-planner` folder (Step 3.6), plus a browser tool
 (Claude's built-in browser pane, or Claude in Chrome) for the Google Sheets / Apps Script / Drive
 website steps. If any is missing, say which steps will fall back to the punch list and continue.
@@ -571,7 +571,7 @@ What the script does:
 - Invoice values (PO number, due-date terms) are **manual in Harvest** — the API can't set them. Put the paste-ready
   values in the checklist's Harvest item (code blocks).
 
-## Step 3.6: SpannerOS Project (staging, after Harvest Create)
+## Step 3.6: SpannerOS Project (prod, after Harvest Create)
 
 SpannerOS gets the project **from Harvest**; nobody types it in. The planner repo's importer has a
 single-project mode that creates the client (if it's new), the project (linked by `harvest_project_id`,
@@ -579,16 +579,21 @@ with the display ID `{CODE}-NNN` assigned by a database trigger) and its role sl
 scheduled Harvest sync brings in hours on its own. That sync only runs the `time` leg and never creates
 projects, so this step is the only way a new project gets in.
 
-**Staging only for now (Mason, 2026-09-29):** staging = `cutkctzmojpgbwtoaiic`. This skill never writes
-to prod (`lyerknxfxesoecmpipip`). Don't use the app's **New project** form: it creates the row without the
-Harvest link. (Proven path: Sandbox-Mason Harvest `49283299` → `SAN-001`, 2026-09-29.)
+**Database refs (corrected 2026-10-29, after go-live):** **prod = `cutkctzmojpgbwtoaiic`**, staging =
+`jhtdnvmuaiibgduclsif`, `lyerknxfxesoecmpipip` is abandoned (never write to it). Real launches go to
+**prod**. Prod writes happen only when Mason says so in this session (he did for Blonglo, 2026-10-29) and
+only through a script he confirms: write `scripts/prod-<project>-launch.sh` with a dry run by default and
+one y/N before any write, run it with `run_in_terminal`, and have him type `y`. Never use the service-role
+key outside that script's own shell. Test runs (client Sandbox) still go to staging with `.env.staging.local`.
+Don't use the app's **New project** form: it creates the row without the
+Harvest link. (Proven paths: Sandbox-Mason Harvest `49283299` → `SAN-001`, staging; Blonglo Harvest `49526563` → `AABP-001`, prod, 2026-10-29.)
 
 **Needs:** `~/Developer/spanner-planner` as a connected folder (request it if missing) with its
-`.env.staging.local`, plus the Supabase connector. Needs from earlier steps: `HARVEST_PROJECT_ID` (3.5d),
+`.env.local` (prod) or `.env.staging.local` (test runs), plus `scripts/db-read.sh --prod|--staging` for read-only checks. Needs from earlier steps: `HARVEST_PROJECT_ID` (3.5d),
 the planner's spreadsheet ID (3a), the TPL's email, the current phase, the PO number, and the payment terms the
 user accepted in the Provision preview.
 
-### 3.6a Pre-check (Supabase MCP `execute_sql`, staging, read-only)
+### 3.6a Pre-check (read-only: `scripts/db-read.sh --prod "<one statement>"`)
 ```sql
 select p.id, p.display_id, p.name, c.name as client, c.code
 from projects p join clients c on c.id = p.client_id
@@ -596,22 +601,25 @@ where p.harvest_project_id = {HARVEST_PROJECT_ID};
 ```
 If a row comes back, the project is already in SpannerOS: skip to 3.6d.
 
-### 3.6b Dry run (device_bash in the repo; writes nothing)
+### 3.6b Dry run (in the repo; writes nothing)
 ```bash
-cd "$HOME/mnt/spanner-planner"
-set -a; . ./.env.staging.local; set +a
-case "$NEXT_PUBLIC_SUPABASE_URL" in *cutkctzmojpgbwtoaiic*) ;; *) echo "REFUSING: env is not staging"; exit 1;; esac
+cd ~/Developer/spanner-planner
+set -a; . ./.env.local; set +a          # prod; use .env.staging.local for test runs
+case "$NEXT_PUBLIC_SUPABASE_URL" in *cutkctzmojpgbwtoaiic*) ;; *) echo "REFUSING: env is not prod"; exit 1;; esac
 npm run sync:harvest -- --legs=clients,projects,assignments --harvest-project={HARVEST_PROJECT_ID}
 ```
-Always keep the `case` guard: `.env.local` in that repo points at **prod**. Read the output:
+Always keep the `case` guard (swap the ref when targeting staging). The Harvest token is Mason's, so the run goes through his terminal. Read the output:
 - The `single project:` lines must name this client and project, with the project `new`.
 - Any `⚠ link` / `✗ ambiguous` line, flagged budget, unmatched task or **new client** means stop and show the user.
-- **New client:** the dry run proposes a 2–4 letter code in `scripts/output/harvest-client-codes.csv`.
-  The code is **permanent** (every display ID for that client uses it). Show the suggested code
-  and wait for the user to approve it or pick another. Then copy the CSV to
-  `scripts/output/harvest-client-codes.approved.csv`, set `approved_code` on that row, and pass
-  `--codes-file=scripts/output/harvest-client-codes.approved.csv` at commit. Handle a flagged budget
-  or task the same way (`--budgets-file` / `--tasks-file`, see `npm run sync:harvest -- --help`).
+- **New client:** the client code is **generic, assigned by the database**: the next unused four-letter code
+  counting up from AAAA (migration 102; Mason, 2026-10-26). **Never suggest, approve or pick a code**, and
+  don't ask Mason for one. Leave `approved_code` blank in the codes CSV (or set it to the next free
+  generic code, e.g. AABP) and pass `--codes-file`. The importer's mnemonic suggestion (BLO, TIM) is
+  ignored. (Mistake 2026-10-29: Blonglo got BLNG, fixed to AABP before any project existed.)
+- **A new client needs two commits:** first `--legs=clients --commit`, then a projects dry run to regenerate
+  `scripts/output/harvest-project-budgets.csv`, copy it, then `--legs=projects,assignments --commit
+  --budgets-file=<copy>`. One commit skips the project ("not in the approved budgets CSV").
+  Handle a flagged task the same way (`--tasks-file`, see `npm run sync:harvest -- --help`).
 
 **Network:** as of 2026-09-29 the Cowork shell can't reach `api.harvestapp.com` or `*.supabase.co`
 (HTTP 000). If the run fails on the network, don't work around it. Give the user the exact
@@ -621,8 +629,9 @@ command block to paste into Terminal on their Mac, and continue from the output 
 Same command block with `--commit` added, plus any approved `--*-file` flags. Show the user the
 counts it reports.
 
-### 3.6d Fill the fields the importer leaves blank (Supabase MCP, staging, one row)
-Show the user the values first. Then run this against **the one project id** from 3.6a/3.6f, never a broader `where`:
+### 3.6d Fill the fields the importer leaves blank (one row, inside the launch script)
+Show the user the values first. Put the update in the launch script (a small tsx script is fine; Blonglo used
+`scripts/blonglo-fill-fields.ts`) so it runs against **the one project id** from 3.6a/3.6f, never a broader `where`:
 ```sql
 update projects set
   tpl_user_id = (select id from users where lower(email) = lower('{TPL_EMAIL}') and is_active),
@@ -639,14 +648,14 @@ returning display_id, tpl_user_id, phase, po_number, payment_terms_days;
 - Use the payment terms the user accepted in the Provision preview (for example, PO Net 45 over agreement Net 30).
 
 ### 3.6e Register the planner for planner sync
-The two-way planner ⇄ staging sync covers only the planners listed in `scripts/input/planner-sync.json`
+The two-way planner ⇄ SpannerOS sync covers only the planners listed in `scripts/input/planner-sync.json`
 (gitignored, local). Add
 `{ "docId": "{PLANNER_SPREADSHEET_ID}", "note": "{Client} | {Project} ({DISPLAY_ID})", "enabled": true }`
 to `planners` with a python read-modify-write. Skip it if the docId is already there. If the file is missing,
 tell the user; don't create it. Then run a dry run: `npm run sync:planners -- --project={DISPLAY_ID}`
 (use the same network fallback as 3.6b). The 2-hour timer commits on its own. Run `--commit` now only if the user asks.
 
-### 3.6f Verify (Supabase MCP, staging)
+### 3.6f Verify (`scripts/db-read.sh --prod`, one statement per call)
 ```sql
 select p.id, p.display_id, p.name, c.code, p.harvest_project_id, p.agreement_type, p.status,
        u.email as tpl, p.phase, p.po_number, p.payment_terms_days,
@@ -657,8 +666,16 @@ left join users u on u.id = p.tpl_user_id
 left join project_budgets b on b.project_id = p.id
 where p.harvest_project_id = {HARVEST_PROJECT_ID};
 ```
-Compare the roles with the Harvest tasks from 3.5d. Save `DISPLAY_ID`, put `SpannerOS (staging): {DISPLAY_ID}`
+Compare the roles with the Harvest tasks from 3.5d. Save `DISPLAY_ID`, put `SpannerOS (prod): {DISPLAY_ID}` (staging for test runs)
 on the Notion project page (Step 7), and check off the item if the checklist has one.
+
+### 3.6g Fill the program links (SpannerOS `project_links`, same launch script)
+The project's link strip takes kinds `notion`, `slack`, `drive`, `external_drive`, `proposal`, `exec_deck`, `planner`,
+`shared_tools` (Harvest is not a kind; it is attached by `harvest_project_id`). After Steps 2-5 exist, upsert the
+ones with a real URL, **only where that kind has no URL yet**: `notion` = project page, `slack` = internal channel,
+`drive` = project Drive folder, `planner`, `exec_deck`, `proposal` = archived signed agreement, `external_drive` and
+`shared_tools` if created. Skip any "add link here" placeholder. (Blonglo used `scripts/blonglo-links.ts`; the pattern
+is `scripts/load-program-links-261014.sql`.) Verify with `db-read.sh` on `project_links`.
 
 On **test runs**, the Sandbox variant imports as its own client (Sandbox-Mason → `SAN`). Add its
 SpannerOS rows to the cleanup list. Deleting them is the user's call; Claude never deletes them.
@@ -780,7 +797,7 @@ generated links using `notion-update-page`:
 - Google Drive folder link
 - External shared drive link (if created)
 - Harvest link (`https://spannerpd.harvestapp.com/projects/{id}` after Create)
-- SpannerOS display ID (`SpannerOS (staging): {DISPLAY_ID}`, Step 3.6)
+- SpannerOS display ID (`SpannerOS (prod): {DISPLAY_ID}`, Step 3.6)
 
 ---
 
@@ -814,9 +831,8 @@ List only what's still open — drop anything Claude completed in this run.
 - [ ] For Fixed Fee: confirm payment plan with BD DRI in Harvest
 - [ ] Note any subbed contractors/partners and their budgets
 
-### SpannerOS (staging)
-- [ ] **Run the import in Terminal** (only if the Cowork shell couldn't reach Harvest/Supabase) — command block from Step 3.6b/c
-- [ ] **Approve the new client code** (only for a new client). The code is permanent.
+### SpannerOS (prod)
+- [ ] **Type y in the launch script's terminal tab** (the Harvest token and prod writes are yours) — script from Step 3.6
 - [ ] Add the planner to `scripts/input/planner-sync.json` (only if Claude couldn't)
 
 ### Shared Tools (if applicable)
@@ -844,7 +860,7 @@ When running this skill, follow this sequence:
 3. **Populate Notion pages** (Step 2) — Rename project page, all `[Client] | [Project]` subpages & the checklist, populate tracker entry, add to launch checklists
 4. **Set up Google Drive** (Step 3) — Create Planner via template script with launch date, duration and budgets set in the dialog (saved to Budget Forecast Tool folder), check B12–B15 and G28, set TPL, approve J1:L1, load the Baseline from the proposal, add it to the __SUMMARY ProjectURLs range, generate Exec Summary deck via Planner → Generate Exec Summary Deck (saved to 00__Exec_Summaries folder), copy template folder structure to Studio > Projects, add exec summary shortcut to project's Program_Management folder, archive the signed agreement if provided (3e), then the company lists (3f)
 4b. **Set up Harvest** (Step 3.5) — Write agreement JSON to the planner's Harvest Setup tab, MCP pre-checks, user clicks Create, MCP verify, add Harvest link
-4c. **Set up SpannerOS** (Step 3.6, staging only) — pre-check, single-project import dry run, user OK (and client code if new), commit, fill TPL/phase/PO/terms, register the planner for sync, verify
+4c. **Set up SpannerOS** (Step 3.6, prod with Mason's say-so) — pre-check, launch script dry run, Mason's y, generic client code if new (two commits), commit, fill TPL/phase/PO/terms, register the planner for sync, verify
 5. **Set up Slack** (Step 4) — Create channels or instruct user
 6. **Set up Calendar** (Step 5) — Ask for meeting times, then create events
 7. **Notifications** (Step 6) — draft deposit invoice in Harvest (6b-0), #spanner-team win post, invoice request draft, contractor forecast draft
@@ -855,8 +871,8 @@ After each major step, report what was created with links so the user can verify
 
 **Never do these — they stay with the user:** clicking **Create** in the Harvest Provision dialog, editing
 Harvest outside the approved steps (Claude may only: read via the MCP, draft the deposit invoice, and remove stray
-tasks on the new project with approval), any write to SpannerOS **prod**, committing the SpannerOS import or
-the Step 3.6d update without the user's OK, choosing a new client code, deleting SpannerOS rows, sending any invoice, the BD Pipeline Bookings/Win sheet, and sending any
+tasks on the new project with approval), any SpannerOS **prod** write that Mason hasn't allowed this session and confirmed with y, committing the SpannerOS import or
+the Step 3.6d update without his OK, hand-picking a client code (they are generic), deleting SpannerOS rows, sending any invoice, the BD Pipeline Bookings/Win sheet, and sending any
 email (Gmail items stay as drafts).
 
 **Close-out Rule**: Only move the checklist to Completed and set the tracker to "In Progress"
@@ -912,8 +928,9 @@ These IDs are used throughout the automation:
 ### SpannerOS
 | Resource | ID |
 |---|---|
-| Staging Supabase (the only target for now) | `cutkctzmojpgbwtoaiic` |
-| Prod Supabase (never written by this skill) | `lyerknxfxesoecmpipip` |
+| Prod Supabase (live since go-live; writes only with Mason's say-so, via his confirmed script) | `cutkctzmojpgbwtoaiic` |
+| Staging Supabase (test runs) | `jhtdnvmuaiibgduclsif` |
+| Abandoned, never write | `lyerknxfxesoecmpipip` |
 | Repo / importer | `~/Developer/spanner-planner` · `scripts/import-harvest.ts` (`npm run sync:harvest`) |
 | Planner sync config (gitignored) | `scripts/input/planner-sync.json` |
 | Sandbox-Mason test project | Harvest `49283299` → `SAN-001` |
@@ -964,11 +981,12 @@ These IDs are used throughout the automation:
 6. **Never edit the ZZ Spanner template projects in Harvest** (HOURLY `25028609`, INTERVAL `27125057`).
    Only the COPY projects may be edited for testing. Never send an invoice.
 
-7. **SpannerOS: staging only, one project only.** Every importer run keeps the staging `case` guard
-   (the repo's `.env.local` is prod). Always do a dry run before `--commit`, and commit only after the user
-   says yes. Direct SQL is limited to the Step 3.6d update of the four fields on the one new project,
-   matched by id. No schema changes, no deletes, no other rows or tables. Client codes are permanent,
-   so the user picks them.
+7. **SpannerOS: one project only; prod only with Mason's say-so.** Real launches go to prod (`cutkctzmojpgbwtoaiic`),
+   test runs to staging (`jhtdnvmuaiibgduclsif`); `lyerknxfxesoecmpipip` is abandoned. Every script keeps a
+   ref `case` guard, does a dry run first, and asks y/N before any write; Mason types the y. Direct writes
+   are limited to the one new project's TPL, phase, PO number and payment terms, plus the client and
+   project rows the importer creates. No schema changes, no deletes, no other rows or tables. Client codes
+   are generic and assigned by the database; nobody picks one.
 
 ---
 
