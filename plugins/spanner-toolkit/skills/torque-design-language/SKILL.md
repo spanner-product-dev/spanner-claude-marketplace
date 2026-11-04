@@ -5,7 +5,7 @@ description: Applies Torque — SpannerOS's product-interface design language (g
 
 # Torque — the SpannerOS interface design language
 
-_Skill copy of `Mason-Claude/Projects/SpannerOS/specs/torque-design-language.md` as of 2026-10-07. That file is the source of truth; if you can reach it, read it and prefer it over this copy._
+_Skill copy of `Mason-Claude/Projects/SpannerOS/specs/torque-design-language.md` as of 2026-10-23. That file is the source of truth; if you can reach it, read it and prefer it over this copy._
 
 **Torque** is the design language for SpannerOS product surfaces — the working end of the spanner. It was developed June 2026 as the "unbound" exploration family (`mockups/interface-*-unbound*.html`, 14 reference pages) and is now codified here. Torque uses **Spanner colors only** but deliberately does not follow the document/marketing brand guidelines (no s07 logo lockup, no 120% type scale) — it is a parallel system for interactive product UI. `spanner-brand-visual` still governs documents, decks, reports, and portal/marketing pages.
 
@@ -16,7 +16,7 @@ _Skill copy of `Mason-Claude/Projects/SpannerOS/specs/torque-design-language.md`
 ## 1 · Principles
 
 1. **Calm glass over navy or paper.** One quiet page surface (Spanner navy in dark, warm paper-gray in light) with translucent glass panels floating on it. Two radial glows give the page depth; nothing else decorates.
-2. **Color is information, never decoration.** Azure means interactive/actual. Orange means warning/over. Amber means estimate. Green means confirmed/on-target. Gray family means time-away/NB/internal. If a color doesn't carry one of those meanings, it doesn't appear.
+2. **Color is information, never decoration.** Azure means interactive/actual. Orange means warning/over. Estimate gray means estimate/forecast/planning. Amber means watch. Green means confirmed/on-target. The reserved gray family means time-away/NB/internal. If a color doesn't carry one of those meanings, it doesn't appear.
 3. **Density with air.** Torque pages are operator tools — they show a lot. Density comes from small, precise type and hairlines; breathing room comes from panel gaps and generous page margins, never from hiding data.
 4. **The chrome teaches.** Labels explain themselves ("↔ = on target (within ±4h or ±$1k)"), footers cite the functional reference, flags say why they matter. A new TPL should be able to read any screen cold.
 5. **Motion is state change.** Things animate only when state changes — a verification line appearing, a panel collapsing, a ring filling. Nothing moves at rest. 0.15–0.3s ease; choreographed sequences stagger ~250–330ms per item.
@@ -25,7 +25,7 @@ _Skill copy of `Mason-Claude/Projects/SpannerOS/specs/torque-design-language.md`
 
 ## 2 · Canonical tokens
 
-Copy this block verbatim into every Torque page. **Dark is the default** (`<html data-theme="dark">`; Mason, 2026-10-07 — see §3). Dark uses **Spanner navy `#293A49`** as the page surface. The app's copy is `app/(os)/torque.css` in `spanner-planner`, ported verbatim; change the two together.
+Copy this block verbatim into every Torque page. **The default theme follows the system setting** (R-67; Mason, 2026-10-22 — see §3); the dark block below is one of the two complete themes. Dark uses **Spanner navy `#293A49`** as the page surface. The app's copy is `app/(os)/torque.css` in `spanner-planner`, ported verbatim; change the two together.
 
 ```css
 html[data-theme="dark"] {
@@ -40,7 +40,7 @@ html[data-theme="dark"] {
   --dim:#5E6E7D;                      /* tertiary text, axis labels */
   --azure:#1FB2F5;                    /* brand azure, lifted for dark contrast */
   --orange:#ED7A40;                   /* brand orange, lifted */
-  --amber:#D9A514;                    /* data-palette amber (estimate series) */
+  --amber:#F6B511;                    /* data-palette amber (watch status; estimate is gray, --est) */
   --green:#2EC592;                    /* brand green, lifted */
   --lblue:#CAECF6;                    /* light blue accents */
   --shadow:none;                      /* dark theme uses glows, not shadows */
@@ -60,7 +60,7 @@ html[data-theme="light"] {
   --dim:#97A2AC;
   --azure:#06A6ED;                    /* true brand azure */
   --orange:#E2672A;                   /* true brand orange */
-  --amber:#B58A10;                    /* amber darkened for light-bg contrast */
+  --amber:#F6B511;                    /* amber = the gold, same in light and dark */
   --green:#0B7C58;                    /* true brand green */
   --lblue:#CAECF6;
   --shadow:0 1px 3px rgba(41,58,73,0.08), 0 8px 28px rgba(41,58,73,0.05);
@@ -83,6 +83,7 @@ html[data-theme="light"] {
   --fs-chart:calc(11px*var(--s)); --fs-big:calc(40px*var(--s));
   --gray-dto:#B9C1C8; --gray-nb:#97A2AC; --gray-ooo:#76828D; --gray-leave:#55606B;
   --red-alert:#D94040;
+  --est:#8A97A4;                           /* estimate gray (R-54), global, no amber fallback; dark #A7B3BF */
   --e1:var(--shadow); --e2:0 2px 6px rgba(41,58,73,.10),0 16px 40px rgba(41,58,73,.10);
   /* the header bar: navy in every skin and both themes (§5) */
   --hdr-bg:#293A49; --hdr-tx:#FFFFFF; --hdr-soft:rgba(255,255,255,.85); --hdr-mut:rgba(255,255,255,.74);
@@ -111,17 +112,17 @@ body {
 }
 ```
 
-**Brand-color discipline:** only Spanner colors appear — navy, azure, orange, green, light-blue, white/grays — plus the **ratified extended data palette** for project identity and chart series (amber #D9A514, violet #6A5FA8, berry #B23A6F, the Tin blue ramp, green #1E7D4F, slate, etc. — see `spanner-data-palette.html`). The reserved **gray semantic family** (silver #B9C1C8 DTO/holiday · gray #97A2AC NB · steel #76828D OOO · charcoal #55606B leave/furlough) keeps its meanings in both themes. **Red stays reserved for alerts** and is almost never on a Torque page.
+**Brand-color discipline:** only Spanner colors appear — navy, azure, orange, green, light-blue, white/grays — plus the **ratified extended data palette** for project identity and chart series (gold/amber #F6B511 for watch status, violet #6558B8, berry #B23A6F, the Tin blue ramp, green #1E7D4F, steel, etc. — see `spanner-data-palette.html`). The reserved **gray semantic family** (silver #B9C1C8 DTO/holiday · gray #97A2AC NB · steel #76828D OOO · charcoal #55606B leave/furlough) keeps its meanings in both themes. **Red stays reserved for alerts** and is almost never on a Torque page.
 
 ---
 
 ## 3 · Theming rules
 
-- **Dark is the default everywhere** — the shell, sign-in, /planning and time entry (Mason, 2026-10-07; spanner-planner PR #113). `<html data-theme="dark">` unless the person has chosen otherwise.
-- The choice is a **three-way select, not a toggle**: dark ☾ · light ☀ · system ◐ ("follow the system" tracks `prefers-color-scheme` live). It sits at the right of the top bar.
+- **The default theme follows the system setting** everywhere — the shell, sign-in, /planning and time entry (R-67; Mason, 2026-10-22; overturns the dark default of PR #113). A person with no stored choice gets light or dark from `prefers-color-scheme`.
+- The choice is a **three-way select, not a toggle**: dark ☾ · light ☀ · system ◐ ("follow the system" tracks `prefers-color-scheme` live). It lives in the account menu in the bottom-left dock (R-05).
 - One choice follows the person across every screen: `localStorage` key **`sos-os-theme`** (values `dark` / `light` / `system`). The old key `sos-torque-theme` is still read as a fallback when nothing newer is stored, and is folded into the new key the next time anyone picks. App code: `lib/theme-pref.ts`.
-- A **pre-paint boot script** sets `data-theme` before the first frame, so nobody sees a flash of the wrong theme. It must repeat the same read-and-resolve logic as `lib/theme-pref.ts`; keep the two in step.
-- Every surface is still checked in both themes.
+- A **pre-paint boot script** sets `data-theme` before the first frame, so nobody sees a flash of the wrong theme. It must repeat the same read-and-resolve logic as `lib/theme-pref.ts`; keep the two in step. Its fallback is `system`, and no screen forces one theme or hard-codes `data-theme` in markup.
+- Every surface is checked in both themes; light is the least verified, so check it first. Form fields use theme colors, and native controls get a matching `color-scheme` (R-68).
 - **All SVG/chart colors must reference tokens** via `style="fill: var(--azure)"` / `style="stroke: var(--line)"` (never `fill="#..."` attributes). This is what makes the theme toggle restyle every chart instantly with no re-render. Fixed identity colors (project palette hexes, the gray family) are the only allowed literals.
 - Terminal/trace surfaces (verification logs) stay dark in **both** themes — terminals are dark.
 
@@ -132,7 +133,7 @@ var root = document.documentElement, KEY = 'sos-os-theme', OLD = 'sos-torque-the
 function readPref(){ try {
   var v = localStorage.getItem(KEY); if (v==='dark'||v==='light'||v==='system') return v;
   var o = localStorage.getItem(OLD); if (o==='dark'||o==='light') return o;
-} catch(e){} return 'dark'; }
+} catch(e){} return 'system'; }
 function resolve(p){ return p==='system' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : p; }
 root.dataset.theme = resolve(readPref());
 window.setThemePref = function(p){             // wired to the dark · light · system select
@@ -157,7 +158,7 @@ matchMedia('(prefers-color-scheme: light)').addEventListener('change', function(
 
 ## 5 · Surfaces & layout
 
-- **Top bar — the header is navy in every skin and both themes** (DR-55, DR-73; Mason's standing rule 2026-10-05). Background `var(--hdr-bg)` (`#293A49`; `#1D2B37` in dark, so it stays distinct from the page), white text, no blur and no bottom hairline. 66 px tall; sticky, and its height is measured, never hardcoded. Controls on the bar (audience indicator, week stepper, $ ⇄ h, viewing as, theme, segments, buttons, selects) use the `--hdr-*` tokens: `--hdr-ctl` fill, `--hdr-line` border, `--hdr-tx` text; a selected segment is `--hdr-on-bg` light azure with navy `--hdr-on-tx` text (white on azure fails 4.5:1). Contrast checked for these exact values: text ≥ 4.5:1, UI ≥ 3:1. Contains the lockup, then the controls right-aligned via a `flex:1` spacer. **No logo SVG on Torque pages.** One row at ≥1100 px.
+- **Top bar — the header is navy in every skin and both themes** (DR-55, DR-73; Mason's standing rule 2026-10-05). Background `var(--hdr-bg)` (`#293A49`; `#1D2B37` in dark, so it stays distinct from the page), white text, no blur and no bottom hairline. 66 px tall; sticky, and its height is measured, never hardcoded. Controls on the bar (audience indicator, week stepper, $ ⇄ h, segments, buttons, selects; viewing as and theme live in the account menu in the bottom-left dock of the side nav, R-05, with one sidebar show/hide icon in the tab row) use the `--hdr-*` tokens: `--hdr-ctl` fill, `--hdr-line` border, `--hdr-tx` text; a selected segment is `--hdr-on-bg` light azure with navy `--hdr-on-tx` text (white on azure fails 4.5:1). Contrast checked for these exact values: text ≥ 4.5:1, UI ≥ 3:1. Contains the lockup, then the controls right-aligned via a `flex:1` spacer. Controls sit next to what they change, and the same control is in the same spot on every screen (R-07, R-08); a control may sit inside the box it changes when that fits. Controls stay clear of the comments edge tab (R-09), and the program head is steady (R-10). **No logo SVG on Torque pages.** One row at ≥1100 px.
 - **Header lockup — RATIFIED 2026-10-06 (Q-174, option B of `mockups/wordmark-spanner-os-options.html`; supersedes C26-18).** One treatment on the shell, sign-in and the planning skin's bar:
 
   ```html
@@ -181,7 +182,7 @@ matchMedia('(prefers-color-scheme: light)').addEventListener('change', function(
   ```
   Rules:
   - The wordmark is **"spanner os"**: lowercase, a space, then "os" in azure, all SpannerSans Regular at **42.4 px**. SpannerSans has the logo's proportions (letters 52.4 / descender 18.4 per 100 px), so 42.4 px gives the brand guidelines' header wordmark: **30 px of ink, 22.2 px letters**, the same as the s07 lockup's 30 px SVG. "spanner" itself never changes; "os" is a separate word.
-  - The **crumb** after the divider is **Inter 22 px regular, letter-spacing .04em**, the brand header's label style: section prefix, a smaller divider, then the page name. Emphasis is color only. The section prefix hides below 1440 px.
+  - The **crumb** after the divider is **Inter 22 px regular, letter-spacing .04em**, the brand header's label style: section prefix, a smaller divider, then the page name. Emphasis is color only. The section prefix stays visible below 1440 px (R-04); if the section name does not fit, it may be dropped. The center of the "A" in any "spanner | text" lockup lines up with the midpoint of the pipe (R-03).
   - **Dividers** are 28 px tall, 1 px azure **borders** (not 1 px backgrounds, so they snap to whole pixels), centered on the 22.2 px letter body (11.1 px above the baseline, so each bottom sits 2.9 px below it).
   - The wordmark, dividers and crumb are **one line of text on a shared real baseline**. Never align dividers on an empty flex item's synthesized baseline; that put them too high.
   - Below 620 px the lockup scales to 0.7 (letters 15.5 px), crumb 17 px.
@@ -189,7 +190,7 @@ matchMedia('(prefers-color-scheme: light)').addEventListener('change', function(
 - **Font embedding:** SpannerSans is embedded per page as a woff2 data URI (`@font-face` + `src:url(data:font/woff2;base64,…)`) — 4.3KB file at `Mason-Claude/Projects/Brand/spanner-sans/SpannerSans-Regular.woff2` (full basic-latin, 98 glyphs), ~5.7KB embedded; offline/portal-cached, no network fetch. Study + provenance: `torque-header-study.html`.
 - **Sticky sub-strips** (stat constellations) are blurred glass: `backdrop-filter: blur(18px)`, background `color-mix(in srgb, var(--bg) 78%, transparent)`, 1px bottom hairline. (The top bar used this treatment until the navy header, 2026-10-05.) **Never hardcode sticky offsets — measure the bar's `offsetHeight` at runtime** (and re-measure on resize / use ResizeObserver). Same rule for chart geometry: measure rendered columns, never assume widths.
 - **Panels:** 16px radius, 1px `var(--line)` border, `var(--panel)` fill, `var(--shadow)` (light) / nothing-or-glow (dark). Padding 13–17px. Panel title = the small caps label, with inline explanatory text in `var(--mut)` after it.
-- **Page width:** **no max-width on SpannerOS meeting screens** (DR-2; superseded 2026-09-30, see §12) — panels flow into auto-fit columns (min 520px), tables size to content, spare width goes to weeks, charts or the comment rail. 24px side padding (16px on phone). Grids: CSS grid with 16px gaps. Documents and portal pages keep a max-width.
+- **Page width:** **no max-width on SpannerOS meeting screens** (R-20, DR-2; decided 2026-10-22: use the whole window, leave space where possible, density where a screen needs it) — panels flow into auto-fit columns (min 520px), tables size to content, spare width goes to weeks, charts or the comment rail, never to empty gutters, and there is no sideways page scroll at laptop width. On wide tables identity columns pin left, the note column pins right, and only week columns scroll (R-21). The comment rail is collapsible with an edge tab and its width is draggable and remembered per viewer (R-23). 24px side padding (16px on phone). Grids: CSS grid with 16px gaps. Documents and portal pages keep a max-width.
 - **Inputs:** `var(--inbg)` fill, 9–10px radius, 1px line border; focus = azure border, no outline ring. Inline hints use a 2.5px azure left border on an `--inbg` strip.
 - Azure focus/selection glow: `box-shadow: 0 0 16–24px rgba(6,166,237,0.12–0.18)` plus azure border.
 
@@ -200,12 +201,14 @@ matchMedia('(prefers-color-scheme: light)').addEventListener('change', function(
 - **Buttons.** Primary: azure fill, white 800 text, 11px radius, `box-shadow: 0 4px 22px rgba(6,166,237,0.3)`; hover = `filter: brightness(1.07)`. Ghost: 1px line border, muted text. Acknowledge/warning action: orange fill. Pill actions (nudges): 999px radius, azure-tinted fill + border.
 - **Chips & pills:** 999px radius; status colors as 12% tint background + 35% tint border + colored text (`color-mix` does the tints). States: pending=orange, approved/ok=green tint, drifted=solid orange + white text.
 - **Segmented controls:** pill group on `--inbg`/panel, 2px padding, active segment = azure fill white text.
-- **Tables:** hairline rows only (`--line`), 10px caps headers in `--dim`, right-aligned numerics, hover row = 5% azure tint. Sticky first column uses opaque `var(--stick)`.
+- **Tables:** hairline rows only (`--line`), 10px caps headers in `--dim`, right-aligned numerics, headers aligned with their data (R-72), hover row = 5% azure tint. Sticky first column uses opaque `var(--stick)`. Sortable headers show a faint arrow at rest and a heavier one with rank when active; one multi-level sort everywhere, remembered per browser (R-70). Default order: programs by client then project, never ID; people A to Z; contractors last; arrow visible on load (R-71).
+- **Stat rows and tiles:** a stat row over a table sits on its own tinted band or is offset, never lined up one-to-one over the columns (R-26); KPI tiles are each bordered (R-27) and their unit (h, $) is not muted, it takes the number's ink; big numbers in a row share a baseline (R-28).
+- **Program tag:** a 22 px color block at the left, an 8 px gap, then the short name, the TPL under the name, all one size (R-78). Contractors render with a lighter background or dashed border (R-64).
 - **Avatars:** rounded-square (9–12px radius), azure 14% tint fill + 30% tint border, azure initials. Variants: amber tint = expense rows, orange tint = pending/placeholder.
 - **Decision buttons: accept / decline always offers Change** (Mason, 2026-10-07). Wherever a person can accept or decline, or anything equivalent (approve / decline, request / not now, open / not yet, sign off / reject), a **Change** button sits between them, in the order primary · Change · negative, e.g. "Approve · Change to… · Decline", "Request 5 h · Change hours… · Not now". Change opens the same item pre-filled; submitting it counts as the decision (recorded as changed). A plain Done or dismiss on an information-only item doesn't need it.
 - **Steppers & rails** (guided flows): numbered circles — done = azure fill + white check, current = azure border + glow, todo = line border; clickable; pair with a progress ring (`stroke-dasharray` arc) in the bar.
 - **Flags:** glass card, orange border (info variant: line border + azure icon), round icon chip, body in `--mut` with `--tx` bolds.
-- **Day/grid cells:** rounded 7–10px tinted cells — azure 16% = at-target, orange 18% = surge band, solid orange = over; em-dash in faded `--dim` for empty (never 0).
+- **Day/grid cells:** rounded 7–10px tinted cells — azure 16% = at-target, orange 18% = surge band; over plan is the program's hue under diagonal ink stripes, with orange text for the number (R-52); em-dash in faded `--dim` only for not set, and a real 0 shows as 0 (R-33).
 - **Terminal trace:** JetBrains Mono 11px on near-black glass with azure border tint; lines fade-translate in, staggered ~260–280ms; ✓ green, ⚠ orange, ▸ headers azure.
 - **Persistent comment bar / command bar:** fixed bottom, blurred like the sticky sub-strips; body gets matching `padding-bottom`.
 
@@ -214,20 +217,21 @@ matchMedia('(prefers-color-scheme: light)').addEventListener('change', function(
 ## 7 · Charts
 
 - **Hand-rolled inline SVG only** — no chart libraries (alignment + theming control; same rationale as the planner grid decision).
-- **Series semantics (fixed):** actual = `var(--azure)` (solid, heaviest 2.4–2.6 stroke, area fill at 13–16% tint); estimate/forecast = `var(--amber)`; estimate-from-now = `var(--mut)`; baseline = `var(--tx)` dashed at 0.5 opacity; budget/zero reference = `var(--orange)` dashed; gray stepped area = estimate envelope on bar charts.
-- Gridlines = `var(--line)` 1px; axis labels = `var(--dim)` 8.5px; key values annotated directly on the chart in series color, 700 weight.
-- Highlight band for "this/reviewed week" = azure 8% tint rect behind the plot.
+- **Series semantics (fixed):** actual = `var(--azure)` (solid, heaviest 2.4–2.6 stroke, area fill at 13–16% tint); estimate/forecast = `var(--est)` (estimate gray, R-54, never `var(--amber)`), drawn with a treatment the reserved gray family does not use; baseline = `var(--tx)` dashed at 0.5 opacity; budget/zero reference = `var(--orange)` dashed; gray stepped area = estimate envelope on bar charts.
+- Gridlines = `var(--line)` 1px; axis labels = `var(--dim)` 8.5px (size floors are pending, see §13); key values annotated directly on the chart in series color, 700 weight.
+- The selected week is a light-blue (azure-tint) column on every table and chart, and this week and the reviewed week are labeled bands at the same x on stacked charts (R-55, R-56; azure 12% in light, 15% in dark). One week anchor per screen, stated once in the header (R-57); weeks labeled relatively above the date (R-58); week groups separated by thin 1 px low-contrast lines (R-59).
+- Over plan in a bar is the program's hue under diagonal ink stripes, not an orange slice (R-52). Person colors exclude orange, red and berry (R-53); by-program bars share one scale (R-66).
 - Approved-actuals rule carries everywhere: the actual series stops at the last approved week with a dot.
 - In-progress bars: azure at 28–38% opacity with 1px azure stroke.
-- Tooltips/crosshairs sync across all chart panels on a page (shared hover registry pattern — see interface-9d).
+- Stacked charts share one x-scale and right gutter. Tooltips/crosshairs sync across all chart panels on a page (shared hover registry pattern — see interface-9d), and the popup shows estimate minus actual in addition to what it already shows (R-60). Never clip a label in a small segment; put it outside or beside.
 
 ---
 
 ## 8 · Data-visibility rules (carry over from SpannerOS)
 
 - **Money is role-gated**: member/contractor surfaces show hours only — no rates, $, budgets, or EAC anywhere (7U and 8U are the reference money-free pages). Gate server-side in the real app; in mockups, state it in the footer.
-- The gray family is never assigned to a client; Tin owns the blues; >14 series aggregate to "other" (data-palette rules apply unchanged).
-- Status language: green **on track** · amber **watch** · orange **at risk** — red is not a status.
+- A program is one color on every screen, read from one shared program color map (R-50). The gray family is never assigned to a client; Tin owns the blues; >14 series aggregate to "other" (data-palette rules apply unchanged).
+- Status language: green **on track** · amber **watch** · orange **at risk** — red is not a status. Do not color-code a metric where green is good for the client and bad for Spanner, such as forecast balance (R-63).
 
 ---
 
@@ -241,14 +245,15 @@ Lowercase labels and headings except the small-caps label rows; sentence-case ex
 
 Before presenting any Torque page:
 
-- [ ] Token block copied verbatim (Torque + system + header tokens); **dark by default**; dark · light · system select persisting to `sos-os-theme`, set before first paint
-- [ ] Dark page surface is Spanner navy `#293A49`; both themes checked
+- [ ] Token block copied verbatim (Torque + system + header tokens); **default follows the system**; dark · light · system select persisting to `sos-os-theme`, set before first paint
+- [ ] Dark page surface is Spanner navy `#293A49`; both themes checked, light first; native controls get a `color-scheme`
 - [ ] Navy header bar with the "spanner os" 42.4 px lockup, Inter 22 px crumb, border dividers on a shared baseline
 - [ ] Every accept / decline offers Change, in the order primary · Change · negative
 - [ ] All SVG colors via `style="...var(--x)"` (toggle restyles charts with no re-render)
 - [ ] Sticky offsets measured, not hardcoded
-- [ ] Numbers in tabular-nums; em-dash (not 0) for empty cells
-- [ ] Color = meaning audit: nothing azure that isn't interactive/actual, nothing orange that isn't a warning/over
+- [ ] Numbers in tabular-nums; a real 0 shows as 0, em-dash only for not set
+- [ ] Estimate series gray (`--est`), over plan hatched, selected and reviewed weeks banded at the same x, whole window used
+- [ ] Color = meaning audit: nothing azure that isn't interactive/actual, nothing orange that isn't a warning/over, nothing amber that isn't watch
 - [ ] Money gated on member-visible surfaces
 - [ ] Footer: design-exploration note + functional reference
 - [ ] JS syntax-checked; every `getElementById` target exists
@@ -271,6 +276,10 @@ History: Torque began as the "unbound" exploration (June 11, 2026, weekly-review
 
 ## 12 · Change log
 
+- **2026-10-23 — rule list approved (Mason; `specs/261022-design-rules-from-feedback.md`).** Estimate and forecast are gray, `--est`, not amber (R-54; overturns amber in §1, §2, §7). The default theme follows the system, with the dark · light · system select kept (R-67; overturns §2, §3). Use the whole window with space where possible (R-20). Account controls moved to a bottom-left dock (R-05); the section prefix stays visible below 1440 px (R-04); the rail is collapsible and adjustable (R-23). Over plan is a hatch of the program hue (R-52). Selected week and this/reviewed week bands (R-55, R-56), one week anchor (R-57), sort cue and default order (R-70, R-71), stacked-chart rules and estimate-minus-actual popup (R-60). Deck rules R-90 and R-92 (one slide background, 16:9) belong to `spanner-brand-visual`, not here. Pending, not rules (§13): R-61 type-size floors, R-62 amber contrast.
+- **2026-10-20 to 10-22 — shell and week controls (Mason).** Header controls moved to the bottom-left account dock; the shared week stepper holds one spot on D12, D6, D2, D13, D14 and the program head; W4 estimate built gray.
+- **2026-10-15 — stat rows (SY-24, Torence).** A stat row over a table sits on its own tinted band or is offset, never lined up over the columns.
+- **2026-10-13 — program color map.** One shared map gives each program one color on every screen, including Tin launch order.
 - **2026-10-07 — specs brought up to the latest decisions (Cowork).** §2 now states dark as the default and carries the system and header tokens; §3 rewritten for the three-way theme choice; §5 header and lockup replaced; §6 gains the Change rule; §10 checklist updated.
 - **2026-10-07 — dark is the default theme (Mason; PR #113).** Everywhere: shell, sign-in, /planning, time entry. Each person picks dark, light or system (a three-way select), remembered under one key, `sos-os-theme` (`lib/theme-pref.ts`); the old `sos-torque-theme` is read as a fallback. Supersedes "light is the default" in §2 and §3.
 - **2026-10-07 — every accept / decline offers Change (Mason).** §6. Recorded in `modules/design-system.md`.
@@ -282,6 +291,12 @@ History: Torque began as the "unbound" exploration (June 11, 2026, weekly-review
   - §5 page width: no max-width on meeting screens (DR-2).
   - Added system tokens alongside §2 (not replacing it): spacing on a 4px base, radii (`--r-panel 16 · --r-btn 11 · --r-in 10 · --r-cell 8 · --r-chip 999`), three elevation levels (`--e1` = `--shadow`, `--e2` popover), and the type-scale variables.
   - The brand skin is formalized as token overrides on the same names (`html[data-skin="brand"]`), not a second system — see the skin table in the design-system spec §8.
-  - **Ratified 2026-09-30 (Q-050):** the generic project hues reordered (orange · plum · olive · rose · green · violet · sienna · amber · berry), the Tin ramp revised (midnight `#073D5C` retired, cornflower `#4F93C4` added, assigned by launch alternating light/dark), and a lighter "grid tone" for capacity fills (DR-9). §2's reference to the Tin blue ramp now means this ramp.
+  - **Ratified 2026-09-30 (Q-050):** the generic project hues reordered (orange · orchid · mint · coral · green · violet · rust · gold · berry (renamed and brightened 2026-10-27, Torence)), the Tin ramp revised (midnight `#073D5C` retired, cornflower `#4F93C4` added, assigned by launch alternating light/dark), and a lighter "grid tone" for capacity fills (DR-9). §2's reference to the Tin blue ramp now means this ramp.
   - 2026-09-30 (later): **present mode retired** (Q-053). One layout, one type scale (`--s` = 1). Restricted-note masking survives as a per-session "hide restricted" toggle.
   - 2026-09-30 (review 3): **present mode kept** after all (DR-72, reverses the retirement above). Present is read-only with collapsed required strips as well as ×1.125; prep is renamed edit.
+
+---
+
+## 13 · Pending, not yet rules
+
+On hold as of 2026-10-23; don't build to these as rules. **R-61** type-size floors (axis 8.5 px, table headers 10 px, labels 12.5 px contradict each other; Mason wants comparison examples). **R-62** amber contrast, or a different amber (examples wanted). The exact estimate-gray treatment and the week-band tint level. **R-13** explicit close on inline panels, **R-35** exec summary first on Claude pages, **R-48** section headers larger than their box, **R-91** no bolder-than-bold type, **R-93** client output on the brand skin (options for a client skin vs SpannerOS style, team to decide).

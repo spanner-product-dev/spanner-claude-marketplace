@@ -149,6 +149,9 @@ the user. You need:
 - **Project description** — a brief summary of the project
 - **Program type** — T&M (Time & Materials) or Fixed Fee
 - **Signed agreement and PO** — Drive links (the Harvest setup and deposit invoice are built from them).
+- **NDA** — is an executed NDA in place? Spanner's Terms & Conditions say the agreement is governed by one.
+  Check the BD Slack channel first (Meditimer, 2026-11-03: "are we under NDA with Henry yet?" "not yet").
+  If not, add it to the Forge agreement summary's open items and the punch list, and tell the BD DRI.
   If there's neither (and no verbal go), confirm **BD mode** (see Important Context) and ask for the proposal link instead.
 
 ### Batch 2 — People
@@ -583,8 +586,18 @@ projects, so this step is the only way a new project gets in.
 `jhtdnvmuaiibgduclsif`, `lyerknxfxesoecmpipip` is abandoned (never write to it). Real launches go to
 **prod**. Prod writes happen only when Mason says so in this session (he did for Blonglo, 2026-10-29) and
 only through a script he confirms: write `scripts/prod-<project>-launch.sh` with a dry run by default and
-one y/N before any write, run it with `run_in_terminal`, and have him type `y`. Never use the service-role
+one y/N before any write. Never use the service-role
 key outside that script's own shell. Test runs (client Sandbox) still go to staging with `.env.staging.local`.
+**Launch script contract (2026-11-04, Meditimer):** argument order never matters: an optional step name
+(`forge|program|fix`), `--commit`, `--yes`; anything else stops the script. No `--commit` = dry run.
+`--commit` alone asks y/N on a terminal and refuses (writes nothing) when there's no terminal. `--commit --yes`
+answers its own prompts. Copy the arg loop and `ask()` from `scripts/prod-meditimer-launch.sh`.
+**Who runs it:**
+- **Claude Code (preferred):** Claude runs the dry run itself and shows Mason the key lines. It runs
+  `--commit --yes` only after Mason says to commit **that step** in chat; a "go ahead" for an earlier step
+  doesn't carry over. Each run is one step; never chain two commits in one command.
+- **Cowork:** the shell can't reach Harvest or Supabase (see Network), so hand Mason the command block and he
+  runs it in Terminal without `--yes` and types `y`.
 Don't use the app's **New project** form: it creates the row without the
 Harvest link. (Proven paths: Sandbox-Mason Harvest `49283299` → `SAN-001`, staging; Blonglo Harvest `49526563` → `AABP-001`, prod, 2026-10-29.)
 
@@ -620,10 +633,18 @@ Always keep the `case` guard (swap the ref when targeting staging). The Harvest 
   `scripts/output/harvest-project-budgets.csv`, copy it, then `--legs=projects,assignments --commit
   --budgets-file=<copy>`. One commit skips the project ("not in the approved budgets CSV").
   Handle a flagged task the same way (`--tasks-file`, see `npm run sync:harvest -- --help`).
+- **An existing client linked by name needs the same two commits.** When the client already exists in
+  SpannerOS without a `harvest_client_id` (e.g. a Forge client renamed before the import), the dry run shows
+  `link` for the client but skips the project ("client not imported") until `--legs=clients --commit
+  --codes-file=<copy>` has run. Put both commits in the launch script with an `ask` between them
+  (Meditimer, 2026-11-04: `scripts/prod-meditimer-launch.sh`).
+- Always invoke launch scripts as `bash scripts/<name>.sh`: the executable bit can be lost when Claude
+  edits the file through the bridge ("permission denied").
 
 **Network:** as of 2026-09-29 the Cowork shell can't reach `api.harvestapp.com` or `*.supabase.co`
-(HTTP 000). If the run fails on the network, don't work around it. Give the user the exact
-command block to paste into Terminal on their Mac, and continue from the output they paste back.
+(HTTP 000). Claude Code runs on Mason's Mac and can. In Cowork, if the run fails on the network, don't work
+around it: give the user the exact command block to paste into Terminal on their Mac, and continue from the
+output they paste back.
 
 ### 3.6c Commit, only after the user says yes
 Same command block with `--commit` added, plus any approved `--*-file` flags. Show the user the
@@ -686,11 +707,17 @@ SpannerOS rows to the cleanup list. Deleting them is the user's call; Claude nev
 
 ### 4a. Create Internal Project Channel
 
-Create it with `slack_create_conversation` (`channel_name`, `is_private` as the user prefers;
-always private on test runs):
-- Internal channel: `{client-name-lowercase}-{project-short-name}`
-- External channel (if needed): `ext-{client-name-lowercase}-spanner` — **must be private**
-If the connector refuses, give the user the exact names to create manually.
+Create it with `slack_create_conversation` (Torence, 2026-11-04):
+- **Internal project channel: public**, named for the **client only**: `{client-lowercase}` (e.g. `#meditimer`).
+  Only when the client already has a channel for an earlier, unrelated program does the new one add the
+  project name (Skylight is the example). Search for an existing `#{client}` channel first.
+- **BD channels are the private ones** (`bd-{client}`, created by Forge). They stay as BD history and are not
+  the program channel. If the client was renamed at launch (Henry Horowitz → Meditimer), check the BD channel
+  name and the Forge deal's `slack_channel` agree.
+- External channel (if needed): `ext-{client-lowercase}-spanner` — **must be private**.
+- Test runs: internal channel private, to keep public noise down.
+Creating a channel is a write in a shared app: confirm the name with the user before creating it. If the
+connector or the session refuses, give the user the exact name to create manually.
 
 ### 4b. Post Launch Announcement
 
@@ -832,7 +859,7 @@ List only what's still open — drop anything Claude completed in this run.
 - [ ] Note any subbed contractors/partners and their budgets
 
 ### SpannerOS (prod)
-- [ ] **Type y in the launch script's terminal tab** (the Harvest token and prod writes are yours) — script from Step 3.6
+- [ ] **Say "commit" for each launch-script step** (Claude Code runs it with `--yes`), or in Cowork run it in Terminal and type y — script from Step 3.6
 - [ ] Add the planner to `scripts/input/planner-sync.json` (only if Claude couldn't)
 
 ### Shared Tools (if applicable)
@@ -939,7 +966,9 @@ These IDs are used throughout the automation:
 - Win announcements: #spanner-team (`C02PJEL2T5L`)
 
 ### Slack Channel Naming
-- Internal: `{client-lowercase}-{project-short}` (e.g., `gigamon-me-design`)
+- Internal (program): `{client-lowercase}` (e.g., `meditimer`), **public**. Add the project name only for a
+  client's second, unrelated program (e.g., the Skylight channels).
+- BD: `bd-{client-lowercase}`, **private** (Forge creates it).
 - External: `ext-{client-lowercase}-spanner` (e.g., `ext-gigamon-spanner`) — must be **private**
 
 ---
@@ -983,7 +1012,8 @@ These IDs are used throughout the automation:
 
 7. **SpannerOS: one project only; prod only with Mason's say-so.** Real launches go to prod (`cutkctzmojpgbwtoaiic`),
    test runs to staging (`jhtdnvmuaiibgduclsif`); `lyerknxfxesoecmpipip` is abandoned. Every script keeps a
-   ref `case` guard, does a dry run first, and asks y/N before any write; Mason types the y. Direct writes
+   ref `case` guard and does a dry run first. A write needs Mason's go for that step: his `y` in Terminal, or
+   his "commit" in chat before Claude Code runs it with `--yes`. Direct writes
    are limited to the one new project's TPL, phase, PO number and payment terms, plus the client and
    project rows the importer creates. No schema changes, no deletes, no other rows or tables. Client codes
    are generic and assigned by the database; nobody picks one.
@@ -996,7 +1026,7 @@ These IDs are used throughout the automation:
 - If a Google Drive copy fails, provide the template URL so the user can copy manually
 - If Slack channel creation isn't supported by the connector, provide exact names for manual creation
 - Always verify created resources by fetching them after creation
-- If the SpannerOS import can't reach the network from Cowork, hand the user the Terminal command block (3.6b) instead of improvising
+- If the SpannerOS import can't reach the network (Cowork), hand the user the Terminal command block (3.6b) instead of improvising
 - If any step fails, continue with the remaining steps and note the failure in the final punch list
 - Planner script error **"Library with identifier ProjectMaster is missing"**: the user lacks access
   to the planner's Apps Script library. Stop the planner steps and ask them to get access from the
