@@ -698,6 +698,8 @@ ones with a real URL, **only where that kind has no URL yet**: `notion` = projec
 `shared_tools` if created. Skip any "add link here" placeholder. (Blonglo used `scripts/blonglo-links.ts`; the pattern
 is `scripts/load-program-links-261014.sql`.) Verify with `db-read.sh` on `project_links`.
 
+**The `notion` and `drive` links are required, not optional** (Mason, 2026-11-04; spec WF-31). SpannerOS deliverable cards link first to **this program's own copy** of each kit item: its Notion page and databases (the PRD database, the Phase 0 and Phase 1 checklists, action items, EIL) and its Drive files (e.g. the tactical plan in `Program_Management`). The app resolves those copies from the program's `notion` page and `drive` folder links by title, replacing the kit's `[Client] | [Project] |` prefix, and falls back to the master template with a "link a file" button. So: fill both links on every launch, keep the kit's page and file titles unchanged apart from the prefix, and report any kit item you renamed or skipped in the punch list. Never link one program's pages from another program, and never use a live program's page as a template source; masters are the PD Wiki process pages, Google Docs Templates and the `_Template_ [Client] | [Project] | New Program Starter Kit` page.
+
 On **test runs**, the Sandbox variant imports as its own client (Sandbox-Mason → `SAN`). Add its
 SpannerOS rows to the cleanup list. Deleting them is the user's call; Claude never deletes them.
 
