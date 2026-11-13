@@ -40,6 +40,23 @@ invent a new structure, and do not copy the rules into a second place where they
 5. **Open questions** go in the project's open-questions register, naming what they block.
 6. **`plan_notes-[project].html`**: rebuild only if the architecture, a major decision or a
    milestone changed, from the plan and notes. Plain md files are the source of truth, so update them first.
+7. **Skills.** Look back at the session for work a skill would have made faster or safer:
+   - a multi-step procedure you worked out and are likely to repeat (a new skill), or
+   - a gotcha, wrong step or missing rule in a skill you used this session (an update to it).
+
+   For each one (usually no more than two), give the skill name, new or update, and what it would
+   add. Keep it short, but take the space you need when the change is not obvious. Then offer
+   these options and let the user pick:
+   - **Write it.** Draft the new skill, or the edited text of the existing one, in its source
+     (the spanner-toolkit plugin in `~/Developer/spanner-claude-marketplace`, or wherever the
+     skill lives). Use `skill-creator`. Show the change before committing anything.
+   - **Update the org skill too.** If the skill is also in the org skill library on claude.ai, make
+     the same change there through Claude in Chrome, so Cowork and the desktop/browser app get it.
+     Check that the org copy matches the source text after saving.
+   - **Not now.**
+
+   Write nothing until the user picks. Skip this step silently if nothing qualifies. A one-off fix,
+   or anything that belongs in memory or the project's `CLAUDE.md`, is not a skill.
 
 ## Keep it small
 
@@ -51,10 +68,12 @@ invent a new structure, and do not copy the rules into a second place where they
 
 ## Reply
 
-Short. Three things:
+Short. Three things, plus a fourth only if step 7 found one:
 
 1. What you changed (files, one line each).
 2. What is still unverified, or what you could not check.
 3. The first thing to do next session.
+4. Any skill you propose to add or update, with the options from step 7 (write it, also update
+   the org skill in Chrome, or not now).
 
 Don't recap the whole session. The history file already has it.
