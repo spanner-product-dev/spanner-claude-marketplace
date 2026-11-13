@@ -155,6 +155,9 @@ the user. You need:
 - **Project description** — a brief summary of the project
 - **Program type** — T&M (Time & Materials) or Fixed Fee
 - **Signed agreement and PO** — Drive links (the Harvest setup and deposit invoice are built from them).
+- **One part of a bigger deal?** — If the agreement is Part 1 of an RFP or a phased program, ask whether the Forge
+  deal stays as that part (value = the signed fee) or covers the whole RFP, and whether later parts get their own deal.
+  (Skylight Buddy, 2026-11-13: the Trial deal was the whole RFP but carried the $12,000 Part 1 value.)
 - **NDA** — is an executed NDA in place? Spanner's Terms & Conditions say the agreement is governed by one.
   Check the BD Slack channel first (Meditimer, 2026-11-03: "are we under NDA with Henry yet?" "not yet").
   If not, add it to the Forge agreement summary's open items and the punch list, and tell the BD DRI.
@@ -164,6 +167,12 @@ the user. You need:
 - **BD DRI** — the Business Development person responsible (name or email)
 - **TPL (Technical Program Lead)** — who will lead the project
 - **Buddy** — the person providing close principal review and partnering with the TPL
+- **Contractors** — name, who leads, and whether Giles has approved. Look in the BD Slack channel first; the BD DRI's
+  team post (Skylight, 2026-11-12) usually names the leads, contractors, hours and kickoff dates. A contractor-led
+  program also needs the contractor agreement and insurance certificates on the punch list.
+- **If the TPL in the planner or SpannerOS differs from the latest Slack or email, update them to match** (Mason,
+  2026-11-13), in this order: planner `TPLName` (Sheet1 B8) first, because planner sync lets the sheet win; then
+  `projects.tpl_user_id` through a one-row prod script; then the Notion Project Tracker TPL and the Forge deal owner.
 
 ### Batch 3 — Dates & Phases
 - **Launch date** — when the project starts
@@ -472,6 +481,9 @@ any documents inside them.
       'application/vnd.google-apps.shortcut'`); the result's `shortcutDetails.targetFileId` must be the file you meant.
    Do this for the Exec Summary deck, for the signed agreement once it's archived (3e), and for the checklist's
    **BD proposal folder** shortcut (the client's `{Client} - BD` folder in BD Proposals → the project folder).
+   **Not through the local file system** (tested 2026-11-13): `ln -s` inside the synced folder uploads a plain file of
+   type `inode/symlink`, not a Drive shortcut (the symlinks Drive shows for real shortcuts are one-way). Remove any
+   such test file. Use the Drive website, preferably in Claude in Chrome once the user is signed in to Google.
    **If the Drive menus won't work in the browser pane**, don't keep trying. On Hexla (2026-11-11) the right-click
    menu opened half off-screen in the narrow pane, **Organize** wouldn't open by hover or click, Shift+Z and the
    menu's Ctrl+⌘+R did nothing, and viewport emulation stopped menus opening at all. The Drive MCP can't make
@@ -524,6 +536,8 @@ runs** (client "Sandbox"). They are company-wide files, so:
      `insert_dimension` (Sheet1 is `sheetId` 0; `startIndex` = row − 1, `inheritFromBefore: true`), then write
      B..H with `update_values`. The row sits inside the sheet's sorted filter range (rows 3–263), so nothing else
      moves. Don't append-and-re-sort: re-sorting reorders a shared sheet other people work in.
+     **Don't use `append_values` on this sheet** (Skylight, 2026-11-13): with range `Sheet1!A3` it wrote into the blank
+     spacer row 4, and moving the row afterwards left an extra blank row to delete.
    - Fill B (client), C (TPL first name), D (launch year), F (project name); H if the
      proposal summary is available; J only for test runs. Leave the rest blank.
    - Read the row back with its neighbors above and below, and confirm every cell landed.
@@ -597,6 +611,9 @@ What the script does:
 - `list_project_assignments` (tasks + users) and `get_project_budget` on the new ID; compare to the preview.
 - Compare `list_projects` `starts_on`/`ends_on` with the agreed launch and end dates. On Timeless Way,
   Harvest ended Oct 26 while the agreed date was Oct 30. Flag any difference; the user fixes it in Harvest.
+  **Also compare the planner's Launch Date (B15) and week offset (G28) and Harvest's `starts_on` with the real kickoff.**
+  When kickoff slips after signing (Skylight Buddy: planner and Harvest said Nov 9, launch moved to Nov 16), the planner
+  date is Claude's to update in the browser (Step 3a, name-box method); Harvest's dates are the user's.
 - Remove any stray task with `remove_task_from_project` only if the user approves.
 - Add the Harvest link to the Notion project page; check off the Harvest items on the checklist.
 - Invoice values (PO number, due-date terms) are **manual in Harvest** — the API can't set them. Put the paste-ready
@@ -626,6 +643,8 @@ answers its own prompts. Copy the arg loop and `ask()` from `scripts/prod-mediti
   doesn't carry over. Each run is one step; never chain two commits in one command.
 - **Cowork:** the shell can't reach Harvest or Supabase (see Network), so hand Mason the command block and he
   runs it in Terminal without `--yes` and types `y`.
+- **Dry runs are Claude's.** Claude Code runs any launch script's dry run by itself, any time, with no ask: a dry run
+  writes nothing (Mason, 2026-11-13). Only `--commit` waits for Mason's word.
 - **Migration runners** (`scripts/live-*.sh` in spanner-planner): when Mason asks in chat ("commit on staging",
   "prod"), Claude Code may run them itself: dry run first, then `--commit`, then read the catalog back with
   `db-read.sh`. A runner that refuses `--yes` on prod and always asks y/N (e.g. `live-119.sh`) stays Mason's:
@@ -765,11 +784,22 @@ the Hexla MoGen pair (`scripts/hexla-mogen-forge-deal.ts`, `scripts/prod-hexla-m
   `ball_in_court`, `next_step`, `scan_notes`, `slack_channel(_id)` = the private BD channel, `launch_list 'full'`.
 - `deal_checkpoints`: every checkpoint up to the latest, in order (`lead, call, qdm, sdef, psent, gah, agr`); a
   missing date takes the next known date, as the Trial importer does. **BD mode stops at Agreement Sent (`agr`).**
-- `deal_stage_history` (one row per checkpoint), `deal_contacts`, `deal_evidence` (the Trial's evidence plus the BD
+- `deal_stage_history`: **one row per checkpoint when its date is known** (`raw_to_stage` `{key} (Forge Trial)` or
+  `{key} (imported)`, `changed_at` that date at 12:00 UTC, `from_stage`/`to_stage` as the importer writes them: `gah`
+  and `agr` are `proposal` > `proposal`, `cwon` is `proposal` > `won`). When a checkpoint has **no known date**, write a
+  single row for the furthest checkpoint you do know, name the undated one in its `raw_to_stage` (e.g. `agr (Forge
+  Trial; Proposal Approved undated)`), and never date a row "now" (Mason, 2026-11-13). Then `deal_contacts`, `deal_evidence` (the Trial's evidence plus the BD
   brief and signing news, newest last, each with its link), `deal_agreement_summaries` from the agreement: type,
   fee + fee note (the fee table), status, schedule, payment, terms, program ref, `facts[]`, `open_items[]`
   (unsigned, NDA not found, no PO, deposit not drafted).
 Dry run, show Mason the key lines, commit on his word, then read it back.
+
+**An existing deal that is stale** (Skylight Buddy, 2026-11-13: the program existed and the deal sat at Proposal with
+no value while the Trial said Closed Won): don't recreate it. Re-read the Trial's `deals/{doc}` and write an update
+script (worked example: `scripts/skylight-buddy-deal-261113.ts` + `scripts/prod-skylight-buddy-deal.sh`) that, for that one deal
+only, adds the missing checkpoints and their history rows, patches the deal facts and `next_step`, inserts the agreement
+summary if none, inserts evidence prod lacks (match on `summary` or `source_record_id`) and inserts launch ticks that
+aren't already set. Never change the owner, the Slack channel or the program link in that script.
 
 ### 3.7c The Forge launch checklist
 - It opens at Closed Won, or **earlier on request** (BD mode: "start the launch checklist" on the deal page). It
@@ -893,6 +923,10 @@ through the MCP; never send). T&M: the agreement's Deposit. FF: Payment 1.
   the agreement first (Hexla's didn't). Say "No materials" when there are none, and name the PO only if there is one:
   an agreement headed "Terms for Blanket Purchase Order" means a PO may still come.
   (test runs: start with `SANDBOX TEST — DO NOT SEND.`)
+- **Fixed fee, Payment 1** (Skylight Buddy, 2026-11-13: $7,200 of $12,000, Net 0, no PO): subject `Product Development and
+  Engineering | {Project} | Payment 1`, line `Payment 1 — Upon fully signed agreement ({pct}% of ${fee} fixed fee)`
+  with `kind` `Launch Deposit`; notes name the agreement date, the payment, and when Payment 2 is invoiced and its
+  terms. No deposit-crediting sentence, since Payment 1 is not a deposit.
 - The MCP **can't edit invoices**. Verify with `get_invoice`; anything wrong is fixed by the user in Harvest.
 - Add a checklist item under **Launch invoice**: "Review and update the draft invoice in Harvest", with the subject,
   description, PO number and notes in `plain text` code blocks, the due date, and "Type: Launch Deposit".
