@@ -97,7 +97,7 @@ run weeks before launch, sometimes by BD and not the TPL. In BD mode:
   An unsent draft for a not-yet-won program blocks other posts in that channel. Put the win post
   text in the punch list, or schedule it well out (e.g. 2 months) if the user asks.
 - **Launch invoice:** put the paste-ready text in the checklist, but skip the 6b-0 Harvest draft and
-  the 6b email until it's signed.
+  the 6b Slack request until it's signed.
 - **Close-out:** never. The checklist stays In Progress until launch. On signature, re-run for the
   remaining items: uncheck F4, drop `[BD]`, set Agreement #, archive the agreement, then the invoice
   and win post.
@@ -911,7 +911,7 @@ Format (match the team's existing launch posts):
 
 After the Harvest project exists, create the launch invoice as a **draft** with `create_invoice` (drafts can't be sent
 through the MCP; never send). T&M: the agreement's Deposit. FF: Payment 1.
-**Tin projects have no launch invoice** — skip 6b-0 and 6b for Tin (the Tin checklist has no Launch invoice section).
+**Tin projects have no launch invoice** — skip 6b-0 and the 6b Slack request for Tin (the Tin checklist has no Launch invoice section).
 **BD mode:** skip 6b-0 and 6b too. Still put the paste-ready invoice text in the checklist for launch day.
 - `client_id`: the project's client; `issue_date`: today; `payment_term`: `upon receipt` (agreement Deposit Net 0)
 - `purchase_order`: the PO number
@@ -931,16 +931,21 @@ through the MCP; never send). T&M: the agreement's Deposit. FF: Payment 1.
 - Add a checklist item under **Launch invoice**: "Review and update the draft invoice in Harvest", with the subject,
   description, PO number and notes in `plain text` code blocks, the due date, and "Type: Launch Deposit".
 
-### 6b. Draft Launch Invoice Request
+### 6b. Launch Invoice Request (Slack, not email)
 
-Use `create_draft` to draft the invoice request:
-- `to`: [Karina's email — ask user to confirm]
-- `cc`: [TPL, Arne, Giles, Mason, Torence — ask for emails or use known addresses]
-- `subject`: `Launch Invoice Request: {Client} | {Project Name}`
-- `body`:
-  - For T&M programs: "Please prepare the Deposit invoice as designated on page 1 of the agreement"
-  - For FF programs: "Please prepare Payment 1 as designated in the payment schedule"
-  - Include project name, client, and TPL contact, and the Harvest draft invoice number from 6b-0
+Since 2026-11-13 (Mason) the launch invoice request goes to Karina **by Slack**, not by email. Save it as a **Slack draft**
+with `slack_send_message_draft` in the finance group DM (`C07PRU0U1GA`: Karina, Mason, Arne, Giles, Torence; add the TPL if
+they aren't in it). Mason reviews and sends it himself. Don't create a Gmail draft for this.
+- Mention Karina, the TPL, Arne and Giles (look up their Slack ids with `slack_search_users`).
+- Say the program has launched (kickoff date) and the launch invoice needs a review in Harvest, with the **Harvest invoice link**
+  (`https://spannerpd.harvestapp.com/invoices/{id}`) and the draft number from 6b-0.
+- State what it is: T&M, the agreement's Deposit; FF, Payment 1 as designated in the payment schedule. Give the amount, due
+  term and PO (or "no PO").
+- Ask Karina to send it to the client when it looks right, and to say what she changes so the process can be updated.
+  (Skylight Buddy, 2026-11-13: Mason sent exactly this; her own invoices use item type "Design & Engineering", so expect edits
+  to the item type and subject.)
+- Draft in Mason's voice (`mason-voice`). Leave the message alone once drafted: the tool can't edit a draft, and a second draft
+  in the same channel replaces or duplicates it.
 
 ### 6c. Draft Contractor Forecast Notification (if applicable)
 
@@ -1028,7 +1033,7 @@ List only what's still open — drop anything Claude completed in this run.
 
 ### Drafts to Send
 - [ ] **Review and send** the #spanner-team win post (if left as a Slack draft)
-- [ ] **Review and send** the launch invoice request draft
+- [ ] **Review and send** the launch invoice request (a Slack draft in the finance group DM)
 - [ ] **Review and send** the contractor forecast notification (if applicable) — attach forecast screenshot first
 
 ### Final Steps (gated — see Close-out Rule)
@@ -1063,7 +1068,7 @@ When running this skill, follow this sequence:
 4d. **Forge** (Step 3.7) — find or create the deal (from the Trial if it's only there), link it to the program, start its launch checklist (early in BD mode), tick it in step with Notion
 5. **Set up Slack** (Step 4) — Create channels or instruct user
 6. **Set up Calendar** (Step 5) — Ask for meeting times, then create events
-7. **Notifications** (Step 6) — draft deposit invoice in Harvest (6b-0), #spanner-team win post, invoice request draft, contractor forecast draft
+7. **Notifications** (Step 6) — draft deposit invoice in Harvest (6b-0), #spanner-team win post, invoice request (Slack draft, 6b), contractor forecast draft
 8. **Update Notion with links** (Step 7) — Add all generated links back to the project page, including links saved on Forge checklist items
 9. **Present manual punch list** (Step 8) — Clear summary of what's left
 10. **Close the loop** (Step 9) — reply in the BD thread with the deal and program links, after Mason approves the text
