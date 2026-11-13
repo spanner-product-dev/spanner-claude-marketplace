@@ -1,17 +1,15 @@
 ---
 name: project-launch
 description: >
-  Automate the Spanner BD-to-PD Launch Checklist for new projects. Use this skill whenever someone says
+  Automate the Spanner BD-to-PD Launch Checklist for new projects. Use whenever someone says
   "launch a new project", "new project setup", "BD to PD checklist", "project kickoff", "set up a new program",
-  "start a new project", "program launch", "launch checklist", "new client project", "kickoff checklist",
-  or any variation of starting the BD-to-PD transition process. Also use when someone asks to
-  "automate project setup", "run the launch checklist", or references the BD-PD launch process.
-  This skill creates Notion pages, Project Tracker entries, Google Drive folders and templates,
+  "program launch", "launch checklist", "new client project", or any variation of starting the BD-to-PD
+  transition, and to resume or finish a launch already partly done ("run through the list", "what else can be done").
+  It creates Notion pages, Project Tracker entries, Google Drive folders and templates,
   the __SUMMARY forecast row, the Harvest project (via the planner's Provision script) and draft
   deposit invoice, the SpannerOS project (prod, imported from Harvest), the Forge deal and its launch checklist,
-  Slack channels and the #spanner-team win post, Google Calendar meetings, and notification email drafts — then
-  provides a punch list for the remaining manual steps. Also use it to resume or finish a launch that is already
-  partly done ("run through the list", "what else can be done").
+  Slack channels and the #spanner-team win post, Google Calendar meetings, and notification email drafts, then
+  provides a punch list for the remaining manual steps.
 ---
 
 # Spanner BD-to-PD Project Launch Automation
