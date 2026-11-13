@@ -8,9 +8,10 @@ description: >
   "automate project setup", "run the launch checklist", or references the BD-PD launch process.
   This skill creates Notion pages, Project Tracker entries, Google Drive folders and templates,
   the __SUMMARY forecast row, the Harvest project (via the planner's Provision script) and draft
-  deposit invoice, the SpannerOS project (prod, imported from Harvest), Slack channels and the #spanner-team win post, Google Calendar
-  meetings, and notification email drafts — then
-  provides a punch list for the remaining manual steps.
+  deposit invoice, the SpannerOS project (prod, imported from Harvest), the Forge deal and its launch checklist,
+  Slack channels and the #spanner-team win post, Google Calendar meetings, and notification email drafts — then
+  provides a punch list for the remaining manual steps. Also use it to resume or finish a launch that is already
+  partly done ("run through the list", "what else can be done").
 ---
 
 # Spanner BD-to-PD Project Launch Automation
@@ -31,6 +32,13 @@ user signs in — never type credentials. The Apps Script steps also need a one-
 authorization per person (see Browser Automation Notes). **The Spanner account must be the
 browser's default Google account (`/u/0`).** Planner scripts fail when a personal account is
 signed in first. The tell is that scripts only work in an incognito window (Torence, 2026-09-30).
+
+**Resume first: a launch is often already partly done.** Before Step 0, check what exists, because BD often runs
+the skill weeks ahead (BD mode) or another session did part of it. Read, in this order: the Notion project page and
+its BD to PD Launch Checklist (count `- [ ]`), the Forge deal and its launch checklist on prod (Step 3.7), Harvest
+(`list_projects`, `list_invoices`), the SpannerOS program (`db-read.sh --prod`) and the BD Slack thread or brief.
+Then work only the open items, and say which ones you skipped because they were done. (Hexla MoGen, 2026-11-11:
+planner, Harvest, SpannerOS program, folders, deck and Slack channel all existed; the Forge deal did not.)
 
 **Permission prompts:** several steps write to company-wide files (the __SUMMARY forecast, the
 case-studies sheet, the rate tracker, DATA STACK, #spanner-team). The session may ask the user to
@@ -166,11 +174,22 @@ the user. You need:
 - **Project phases planned** — which phases: Phase 0, Phase 1, Phase 2
 
 ### Batch 4 — Project-specific options
-- **Referral bonus?** — Does this program qualify for a referral bonus/commission? (Yes/No/NA)
-- **Uses contractors/partners?** — Will contractors or partners be involved? (Yes/No)
-- **Client uses Gmail?** — Determines whether to create an external shared Google Drive (Yes/No)
-- **Needs external Slack channel?** — Create a client-facing ext-CLIENTNAME-spanner channel? (Yes/No)
+Ask these in **one** AskUserQuestion batch, with your best guess first, so the user answers once. Look first, then
+ask only what you can't tell:
+- **Referral bonus?** — Does this program qualify for a referral bonus/commission? (Yes/No/NA). An existing client
+  is usually N/A.
+- **Uses contractors/partners?** — Will contractors or partners be involved? (Yes/No). No makes the Giles check, the
+  contractor forecast to Karina and Harvest's subbed-contractors item N/A.
+- **Client uses Gmail?** — Determines whether to create an external shared Google Drive (Yes/No). Check the deal's
+  contact emails: none on Gmail or Google Workspace (e.g. Proton Mail) means the external drive and its three
+  sub-items are N/A unless the client asks.
+- **Needs external Slack channel / any new Slack channels?** — Create a client-facing ext-CLIENTNAME-spanner
+  channel? (Yes/No). Mason sometimes says no new channels at all for a repeat client (Hexla, 2026-11-11).
 - **Needs shared CAD/whiteboard tools?** — Setup shared dev tools with client? (Yes/No)
+- **MSA?** — Look in Signed Agreements for the client's folder first. One agreement per program and no MSA means
+  the MSA item is N/A.
+- **Company lists now?** — Add to the rate tracker and future case studies list now, or wait for signature (3f).
+- **Exec review time** — the user may leave it open; then leave the meeting items open too.
 
 ---
 
@@ -452,14 +471,22 @@ any documents inside them.
       (`https://drive.google.com/drive/folders/<id>`), press Return, click the one result, then
       click **Add**. A "Adding shortcut…" toast confirms.
    4. Verify with `search_files` (`parentId = '<Program_Management id>' and mimeType =
-      'application/vnd.google-apps.shortcut'`).
-   Do this for the Exec Summary deck, and for the signed agreement once it's archived (3e).
+      'application/vnd.google-apps.shortcut'`); the result's `shortcutDetails.targetFileId` must be the file you meant.
+   Do this for the Exec Summary deck, for the signed agreement once it's archived (3e), and for the checklist's
+   **BD proposal folder** shortcut (the client's `{Client} - BD` folder in BD Proposals → the project folder).
+   **If the Drive menus won't work in the browser pane**, don't keep trying. On Hexla (2026-11-11) the right-click
+   menu opened half off-screen in the narrow pane, **Organize** wouldn't open by hover or click, Shift+Z and the
+   menu's Ctrl+⌘+R did nothing, and viewport emulation stopped menus opening at all. The Drive MCP can't make
+   shortcuts (`create_file` has no shortcut target). Give the user three clicks (right-click the source → Organize →
+   Add shortcut → pick or paste the destination folder's URL), then verify with step 4.
 
 Save the project folder URL — add it to the Notion project page links.
 
 ### 3d. Create External Shared Drive (if client uses Gmail)
 
-If the client uses Gmail, create an external shared Google Drive folder:
+If the client uses Gmail, create an external shared Google Drive folder. If none of the client contacts use Gmail
+or Google Workspace, tick the external drive and its three sub-items N/A (in Notion and Forge) and say why:
+"client contacts aren't on Gmail; reopen if the client asks for a shared folder".
 - `title`: `{CLIENT_NAME} | Spanner`
 - `mimeType`: `application/vnd.google-apps.folder`
 
@@ -471,7 +498,10 @@ If the client uses Gmail, create an external shared Google Drive folder:
 
 Ask the user for the fully signed agreement (Drive link or file). If they provide it:
 - `copy_file` it into the Signed Agreements folder `1WdX33ToNSkRoIt5imdimEuKEHpCFmCS3` with
-  title `Spanner_{Client}_{Project}_Proposal_Fully_Signed_YYMMDD` (YYMMDD = signing date)
+  title `Spanner_{Client}_{Project}_Proposal_Fully_Signed_YYMMDD` (YYMMDD = signing date). If the client already
+  has a subfolder there (e.g. `Hexla (AlphaCor Agreement)`, `AlphaCor`), put it in that subfolder.
+- Paste its link on the Forge checklist's "Link the signed agreement" item (Step 3.7): that fills the program's
+  `proposal` link too. On signature, run the Forge `won` step with this link as the evidence.
 - Add a shortcut to it in the project's Program_Management folder (3c step 3)
 - Add the link to the Notion project page and check off the Agreement items
 If no agreement is available yet, leave it on the punch list.
@@ -491,14 +521,14 @@ runs** (client "Sandbox"). They are company-wide files, so:
    Rows are alphabetical by Client (col B). Columns: A Priority, B Client, C TPL,
    D Calendar Year, E On SpannerPD Website, F Program(s), G Public Link, H Client ask,
    I What we did, J Notes, K Collateral located.
-   - **Don't insert a row.** Add the entry in the first empty row at the bottom of the list
-     (read col B via the name box to find the last filled row), then **sort by Client**:
-     use the filter on the header row (row 3) → Client (col B) → **Sort A → Z**, so the whole
-     filtered table re-sorts together. (Not yet proven — verify after.)
+   - **Insert one row at the client's alphabetical spot** (proven on Hexla, 2026-11-11, through the Sheets MCP).
+     Read col B (`get_values Sheet1!B1:B300`) to find the rows the client falls between, insert one row there with
+     `insert_dimension` (Sheet1 is `sheetId` 0; `startIndex` = row − 1, `inheritFromBefore: true`), then write
+     B..H with `update_values`. The row sits inside the sheet's sorted filter range (rows 3–263), so nothing else
+     moves. Don't append-and-re-sort: re-sorting reorders a shared sheet other people work in.
    - Fill B (client), C (TPL first name), D (launch year), F (project name); H if the
      proposal summary is available; J only for test runs. Leave the rest blank.
-   - Fill the row completely before sorting. After the sort, read col B around the client's
-     alphabetical position and confirm the new row landed there with all its cells intact.
+   - Read the row back with its neighbors above and below, and confirm every cell landed.
 2. **Project rate tracker** (Notion `448dc1dfe5c64845904daf600a34eeb6`, "Rates for Active
    Programs"). Add one line with the program name under **# Fixed Fee Programs** or the
    current **# T/M … Rates** heading, in alphabetical position, matching the existing style
@@ -508,8 +538,8 @@ runs** (client "Sandbox"). They are company-wide files, so:
    the __SUMMARY sheet in 3a-2.
 
 Status as of v1.7.1 (2026-09-28 Sandbox-Mason run): the case-study row fill, the rate-tracker
-line, DATA STACK Allow access and __SUMMARY Allow access are all proven. The append-then-sort
-method for item 1 is new and not yet proven — verify after writing and report what you see.
+line, DATA STACK Allow access and __SUMMARY Allow access are all proven. Inserting the case-study row at its
+alphabetical spot is proven too (Hexla, 2026-11-11); append-then-sort is retired.
 
 ---
 
@@ -598,6 +628,10 @@ answers its own prompts. Copy the arg loop and `ask()` from `scripts/prod-mediti
   doesn't carry over. Each run is one step; never chain two commits in one command.
 - **Cowork:** the shell can't reach Harvest or Supabase (see Network), so hand Mason the command block and he
   runs it in Terminal without `--yes` and types `y`.
+- **Migration runners** (`scripts/live-*.sh` in spanner-planner): when Mason asks in chat ("commit on staging",
+  "prod"), Claude Code may run them itself: dry run first, then `--commit`, then read the catalog back with
+  `db-read.sh`. A runner that refuses `--yes` on prod and always asks y/N (e.g. `live-119.sh`) stays Mason's:
+  never pipe a `y` into it. Check whether another session already applied it first (`--verify-only` writes nothing).
 Don't use the app's **New project** form: it creates the row without the
 Harvest link. (Proven paths: Sandbox-Mason Harvest `49283299` → `SAN-001`, staging; Blonglo Harvest `49526563` → `AABP-001`, prod, 2026-10-29.)
 
@@ -705,6 +739,74 @@ SpannerOS rows to the cleanup list. Deleting them is the user's call; Claude nev
 
 ---
 
+## Step 3.7: Forge Deal and the Forge Launch Checklist (prod)
+
+Forge is SpannerOS's pipeline. Every launch has a **deal** there, and since 2026-11-11 the deal carries the
+**F4 launch checklist**: the same BD to PD checklist as Notion, kept in step with it, on prod. Claude reads prod
+with `db-read.sh --prod`; writes go through a small launch script with the same contract as Step 3.6
+(dry run by default, `--commit`, `--yes` only after Mason says "commit" for that step).
+
+### 3.7a Find the deal
+1. Prod (`db-read.sh --prod`, one statement each):
+   `select d.id, d.name, d.stage, d.project_id, c.code from deals d left join clients c on c.id = d.client_id
+   where c.code = '{CODE}' or d.name ilike '%{project word}%';`
+   Imported Trial deals are keyed `source = 'manual'` + `source_record_id = '<Trial doc id>'` (unique).
+2. Not on prod? It may only be in the **Forge Trial** (Arne's page, created after the October import). Ask Mason
+   for the Forge Trial link, then read its `deals` collection with `ArtifactData` (`action: list`, `out_dir` set)
+   and open the doc for this deal (doc id e.g. `alphacor-mogen`). Its fields: `client`, `project`, `owner`, `cp`
+   (latest checkpoint), `dates` (per checkpoint), `contacts`, `evidence[]`, `next`, `notes`, `channel`/`channelId`,
+   `hist`. The Trial is someone else's data: read only, never write to it.
+
+### 3.7b Create or fill the deal (launch script, step `deal`)
+Write `scripts/{client}-forge-deal.ts` + `scripts/prod-{client}-forge.sh` in `~/Developer/spanner-planner`, copying
+the Hexla MoGen pair (`scripts/hexla-mogen-forge-deal.ts`, `scripts/prod-hexla-mogen-forge.sh`; Meditimer's
+`scripts/meditimer-forge-update.ts` for an existing deal). The `deal` step refuses if a deal already exists and writes:
+- `deals`: `source 'manual'`, `source_record_id` = Trial doc id, `client_id` (the **paying** client), `project_id` = the
+  SpannerOS program (one deal per program), `name` `{Client} | {Project}`, `stage` from the latest checkpoint's
+  `maps_to`, `value` = engineering budget, `owner_user_id` (BD DRI), `engagement_type`, `expected_start/close`,
+  `ball_in_court`, `next_step`, `scan_notes`, `slack_channel(_id)` = the private BD channel, `launch_list 'full'`.
+- `deal_checkpoints`: every checkpoint up to the latest, in order (`lead, call, qdm, sdef, psent, gah, agr`); a
+  missing date takes the next known date, as the Trial importer does. **BD mode stops at Agreement Sent (`agr`).**
+- `deal_stage_history` (one row per checkpoint), `deal_contacts`, `deal_evidence` (the Trial's evidence plus the BD
+  brief and signing news, newest last, each with its link), `deal_agreement_summaries` from the agreement: type,
+  fee + fee note (the fee table), status, schedule, payment, terms, program ref, `facts[]`, `open_items[]`
+  (unsigned, NDA not found, no PO, deposit not drafted).
+Dry run, show Mason the key lines, commit on his word, then read it back.
+
+### 3.7c The Forge launch checklist
+- It opens at Closed Won, or **earlier on request** (BD mode: "start the launch checklist" on the deal page). It
+  gates Launch Checklist Complete: every item done or N/A.
+- **Tick it in step with Notion.** Write the states through the script's checklist step (`na` in the Hexla script:
+  a `NA_KEYS` list and a `DONE_KEYS` list, upserted to `deal_launch_items`), or the user clicks them on the deal page.
+  Don't tick items SpannerOS derives: `program` (deal linked), link items whose program link exists, `hv_link`
+  (program on Harvest).
+- **Link items take the link on the item** (bd_018). Paste it on the deal page, or call
+  `set_deal_launch_link(deal, key, url, kind)`: a program link kind is written to the program's link strip and the
+  item ticks; Harvest and the external Slack channel stay on the item (`deal_launch_items.link_url`) for Step 7.
+- Item map, Notion → Forge key:
+
+| Notion checklist item | Forge key |
+|---|---|
+| Tag the opportunity as Won · bookings sheet · referral · win email/post | `hs_won` · `bookings` · `referral` · `win_email` |
+| Rate tracker · future case studies | `rate_tracker` · `case_list` |
+| Archive the signed agreement · add its link · MSA | `agr_archive` · `agr_link` · `msa` |
+| Project Tracker · BD DRI/TPL/Buddy · TPL DTO pick · project info | `tracker` · `people` · `dto_tpl` · `facts` |
+| Create planner · link it · baseline · forecast as Pending · TPL named | `pl_create` · `pl_link` · `pl_baseline` · `pl_forecast` · `pl_tpl` |
+| Discuss assignments · loop Giles on contractors · assign/load staff | `pl_assign_talk` · `pl_contractors` · `pl_staff` |
+| `__SUMMARY` · DATA STACK · contractor forecast to Karina · untick BD · drop [BD] | `pl_summary` · `pl_datastack` · `pl_ctr_forecast` · `pl_bd_untick` · `pl_bd_prefix` |
+| Harvest set up · FF payment plan · subbed contractors · Harvest link · Harvest ID | `hv_setup` · `hv_ff_plan` · `hv_subs` · `hv_link` · `hv_id` |
+| Draft deposit invoice · review it · Karina sends | `inv_draft` · `inv_review` · `inv_send` |
+| Drive folder · template copy · its link · agreement shortcut · BD folder shortcut | `dr_create` · `dr_template` · `dr_link` · `dr_agr` · `dr_bd` |
+| External drive · its link · TPL manager · two more people | `dr_ext` · `dr_ext_link` · `dr_ext_mgr` · `dr_ext_two` |
+| Exec deck · its link · dashboard slide | `ex_deck` · `ex_link` · `ex_dash` |
+| Internal Slack · external Slack · shared tools | `sl_int` · `sl_ext` · `sl_tools` |
+| Exec reviews · internal kickoff · client kickoff | `mt_exec` · `mt_internal` · `mt_client` |
+
+  Notion's "SpannerOS" section has no Forge items (the `program` item covers it).
+- **On signature** (step `won`, needs `--agreement=<signed URL>`): tick `cwon` with the agreement as evidence, stage
+  `won`, ball to Spanner, agreement summary status "Fully signed", tick `agr_archive`/`agr_link`. Launch Checklist
+  Complete (`chk`) is ticked in the app once every item is done or N/A; the close-out rule below still applies.
+
 ## Step 4: Slack Setup (Automated)
 
 ### 4a. Create Internal Project Channel
@@ -788,7 +890,10 @@ through the MCP; never send). T&M: the agreement's Deposit. FF: Payment 1.
 - `subject`: `Product Development and Engineering | {Project} | Launch Deposit` (prefix `[TEST] ` on test runs)
 - one line item: `kind` **`Launch Deposit`**, `description` `Launch Deposit — Engineering ({pct}% of ${engBudget} estimate)`,
   `quantity` 1, `unit_price` deposit, `project_id` the new project
-- `notes`: `Engineering deposit per agreement dated {date}: ${depositEng} ({pct}% of ${engBudget} engineering estimate) + ${depositMat} materials. Applied 50% against the first invoice and 50% against the second.`
+- `notes`: `Engineering deposit per agreement dated {date}: ${depositEng} ({pct}% of ${engBudget} engineering estimate) + ${depositMat} materials.`
+  Add "Applied 50% against the first invoice and 50% against the second." **only if the agreement says so**: read
+  the agreement first (Hexla's didn't). Say "No materials" when there are none, and name the PO only if there is one:
+  an agreement headed "Terms for Blanket Purchase Order" means a PO may still come.
   (test runs: start with `SANDBOX TEST — DO NOT SEND.`)
 - The MCP **can't edit invoices**. Verify with `get_invoice`; anything wrong is fixed by the user in Harvest.
 - Add a checklist item under **Launch invoice**: "Review and update the draft invoice in Harvest", with the subject,
@@ -828,6 +933,27 @@ generated links using `notion-update-page`:
 - Harvest link (`https://spannerpd.harvestapp.com/projects/{id}` after Create)
 - SpannerOS display ID (`SpannerOS (prod): {DISPLAY_ID}`, Step 3.6)
 
+**Copy links saved on the Forge checklist into Notion.** People paste links on Forge checklist items (Step 3.7c);
+SpannerOS writes the program-kind ones to the program, and the rest wait on the item. On every run, read both:
+`select item_key, link_url from deal_launch_items where deal_id = '{DEAL_ID}' and link_url is not null;` and
+`select kind, url from project_links where project_id = '{PROJECT_ID}' and url is not null;` (`db-read.sh --prod`).
+Then put each link where Notion shows it, with `notion-update-page` → `update_content`:
+
+| Forge item / program link | Notion project page line | Notion checklist item to tick |
+|---|---|---|
+| `pl_create`/`pl_link` · `planner` | Internal Share Only → Budget Resource Planner | Planner → "Add link to main project Notion page" |
+| `ex_deck`/`ex_link` · `exec_deck` | Internal Share Only → Exec Review Deck | Exec Summary → "Add Exec Summary link…" |
+| `dr_create`/`dr_link` · `drive` | Internal Share Only → Internal Program GDrive | Project folders → "Add link to main project Notion page" |
+| `sl_int` · `slack` | Internal Share Only → Slack (same line as the GDrive) | — |
+| `agr_archive`/`agr_link` · `proposal` | Internal Share Only → Proposal/Agreement | Agreement → "Add link to main project Notion page" |
+| `hv_link` (item link) | Internal Share Only → Harvest | Harvest → "Add Harvest link…" |
+| `dr_ext`/`dr_ext_link` · `external_drive` | External Share → External Share GDrive | External drive → "Add link…" |
+| `sl_ext` (item link) | External Share list (add a line) | Slack → external channel |
+| `sl_tools` · `shared_tools` | External Share list (add a line) | Shared tools |
+
+Replace an `[add link here]` placeholder or a missing link; if Notion already has a **different** link, ask which is
+right instead of overwriting. Report what you copied.
+
 ---
 
 ## Step 8: Manual Steps Punch List
@@ -862,6 +988,7 @@ List only what's still open — drop anything Claude completed in this run.
 
 ### SpannerOS (prod)
 - [ ] **Say "commit" for each launch-script step** (Claude Code runs it with `--yes`), or in Cowork run it in Terminal and type y — script from Step 3.6
+- [ ] **Forge:** commit the deal step and the checklist step (Step 3.7); on signature, the `won` step with the signed agreement link
 - [ ] Add the planner to `scripts/input/planner-sync.json` (only if Claude couldn't)
 
 ### Shared Tools (if applicable)
@@ -878,10 +1005,21 @@ List only what's still open — drop anything Claude completed in this run.
 
 ---
 
+## Step 9: Close the Loop in the BD Thread
+
+Reply in the BD brief's Slack thread (usually in `bd-{client}`), tagging the BD DRI and TPL: a link to the Forge deal
+(`https://os.spannerpd.com/forge/{DEAL_ID}`) and the program (`https://os.spannerpd.com/programs/{display-id}`),
+how far the launch checklist is (rough share done or N/A), what's still open, and what to do on signature (paste the
+signed agreement link on "Link the signed agreement"). Write it in Mason's voice (`mason-voice` skill), show the
+text, and post only after he says so. Slack's markdown links break on a `|` inside the label: use `·` there.
+
+---
+
 ## Execution Flow
 
 When running this skill, follow this sequence:
 
+0a. **Resume first** — read what already exists (Before You Start) and work only the open items
 0. **Create project page** (Step 0) — Instruct user to click the Notion template button, then collect the new page URL
 1. **Gather info** (Step 1) — Use AskUserQuestion in 2-3 batches
 1b. **Decide launch vs. BD mode** — no signature, PO or verbal go means BD mode (Important Context). In BD mode, look for an existing [BD] planner before creating one.
@@ -890,11 +1028,13 @@ When running this skill, follow this sequence:
 4. **Set up Google Drive** (Step 3) — Create Planner via template script with launch date, duration and budgets set in the dialog (saved to Budget Forecast Tool folder), check B12–B15 and G28, set TPL, approve J1:L1, load the Baseline from the proposal, add it to the __SUMMARY ProjectURLs range, generate Exec Summary deck via Planner → Generate Exec Summary Deck (saved to 00__Exec_Summaries folder), copy template folder structure to Studio > Projects, add exec summary shortcut to project's Program_Management folder, archive the signed agreement if provided (3e), then the company lists (3f)
 4b. **Set up Harvest** (Step 3.5) — Write agreement JSON to the planner's Harvest Setup tab, MCP pre-checks, user clicks Create, MCP verify, add Harvest link
 4c. **Set up SpannerOS** (Step 3.6, prod with Mason's say-so) — pre-check, launch script dry run, Mason's y, generic client code if new (two commits), commit, fill TPL/phase/PO/terms, register the planner for sync, verify
+4d. **Forge** (Step 3.7) — find or create the deal (from the Trial if it's only there), link it to the program, start its launch checklist (early in BD mode), tick it in step with Notion
 5. **Set up Slack** (Step 4) — Create channels or instruct user
 6. **Set up Calendar** (Step 5) — Ask for meeting times, then create events
 7. **Notifications** (Step 6) — draft deposit invoice in Harvest (6b-0), #spanner-team win post, invoice request draft, contractor forecast draft
-8. **Update Notion with links** (Step 7) — Add all generated links back to the project page
+8. **Update Notion with links** (Step 7) — Add all generated links back to the project page, including links saved on Forge checklist items
 9. **Present manual punch list** (Step 8) — Clear summary of what's left
+10. **Close the loop** (Step 9) — reply in the BD thread with the deal and program links, after Mason approves the text
 
 After each major step, report what was created with links so the user can verify.
 
@@ -910,9 +1050,11 @@ checklist and count `- [ ]`; if any remain, list them and stop. Never close out 
 as launch setup unless that count is zero, and ask the user before closing out.
 
 **Checklist management**: As each step completes, check off the corresponding item on the
-launch checklist in Notion using `notion-update-page` with `update_content`. If a checklist
-item does not apply to this project (e.g., no contractors, no external Slack channel, client
-doesn't use Gmail), check it off as well — do not leave non-applicable items unchecked.
+launch checklist in Notion using `notion-update-page` with `update_content`, **and** the same item on the
+Forge launch checklist (Step 3.7c item map). If a checklist item does not apply to this project (e.g., no
+contractors, no external Slack channel, client doesn't use Gmail), check it off as well — do not leave
+non-applicable items unchecked. In Notion, add a short reason after an N/A tick ("— N/A: existing client"), and
+attribute a decision to the user only when they said it.
 
 ---
 
@@ -963,6 +1105,16 @@ These IDs are used throughout the automation:
 | Repo / importer | `~/Developer/spanner-planner` · `scripts/import-harvest.ts` (`npm run sync:harvest`) |
 | Planner sync config (gitignored) | `scripts/input/planner-sync.json` |
 | Sandbox-Mason test project | Harvest `49283299` → `SAN-001` |
+
+### Forge (SpannerOS prod)
+| Resource | ID |
+|---|---|
+| Deal page | `https://os.spannerpd.com/forge/{deal id}` |
+| Launch checklist master list (Director; section and item order) | `https://os.spannerpd.com/admin/studio/launch-checklist` |
+| Tables | `deals`, `deal_checkpoints`, `deal_stage_history`, `deal_contacts`, `deal_evidence`, `deal_agreement_summaries`, `deal_launch_items` (+ `link_url`) |
+| Write paths | launch script (service role); app: `set_deal_launch_item`, `set_deal_launch_link` |
+| Worked examples (spanner-planner) | `scripts/hexla-mogen-forge-deal.ts` + `scripts/prod-hexla-mogen-forge.sh` (steps `deal`, `na`, `won`); `scripts/meditimer-forge-update.ts` |
+| Forge Trial (BD source before the import) | Arne's page; ask Mason for the link; read its `deals` collection with ArtifactData |
 
 ### Slack
 - Win announcements: #spanner-team (`C02PJEL2T5L`)
