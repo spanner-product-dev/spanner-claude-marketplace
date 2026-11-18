@@ -210,7 +210,7 @@ auto-paused, which has been the cause before.
 
 ---
 
-## Three lessons that cost real time
+## Four lessons that cost real time
 
 **A privilege change is not verified by a read test.** Migration 025's read half was dry-run
 tested and worked; its write half was never exercised until a human clicked Save, by which point
@@ -238,6 +238,18 @@ since they do not survive" — and 042 did not read it.
 return type; a verify script declared the old one and `select * into` mapped the new composite
 *positionally*, pushing a `date` into a `uuid` column. PL/pgSQL does not warn. Grep for consumers
 first.
+
+**A "refused" test that writes is a write.** Testing the write half of a new definer through the
+app means real rows on staging, and staging writes go only through the app, so a row the app
+cannot undo is stuck there. On 2026-11-15 two "invalid value" tests of migration 121's invoicing
+settings form each SAVED a row: the script set `input.value = 'abc'` and called
+`form.requestSubmit()` a second or two after a reload, React hydration had already put the field
+back to its empty default, and empty is a valid "clear". That left a `finance_settings` row of
+nulls and two `invoicing_change_log` rows the app cannot remove. In the browser, click the field
+and type into it after the page has settled and its tab is fronted. Never `requestSubmit()` a form
+whose empty value is a valid write. A refusal message is not proof: count the rows in the database
+before and after (`scripts/db-read.sh --staging`), and write down cleanup SQL for anything that
+landed.
 
 ---
 
