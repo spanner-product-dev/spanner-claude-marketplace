@@ -208,6 +208,28 @@ the statements parsed and ran; it says nothing about whether they did what the f
 If a project seems unreachable, `supabase projects list` is read-only and shows whether it has
 auto-paused, which has been the cause before.
 
+### Ship the live script in the same PR
+
+For recent migrations (127 onward, at least) Mason applies a migration with **`scripts/live-0NN.sh`** (and, for Forge,
+`live-forge-bd-0NN.sh`), not with the raw `supabase db query` commands above. The script is part
+of the deliverable: **a migration PR is not complete without it.** The 143 migration (add an
+expense by hand) was merged with its SQL and verify file but no script; the script arrived in a
+separate commit hours later, while `main` was about to be released to prod. In that gap the
+screen would have called a function prod did not have.
+
+Copy the newest `scripts/live-*.sh` (check `git ls-tree origin/main scripts/ | grep live-`) and
+change four things: the file names (`MIG`, `VER`), the numbers in the header and messages, the
+`CATALOG` query (the functions/columns *this* migration creates, `anon_can_run` 0, and a count
+that must not move), and the "want:" line that says what the catalogue should read back. Then:
+
+- `bash -n scripts/live-0NN.sh` and read the diff against the script it came from.
+- **Do not run it.** It links the main checkout to the target project (`supabase link`), which
+  moves Mason's checkout; the staging run is his or an explicit go-ahead from him.
+- Say in the PR body that it is not applied on staging or prod, and which feature breaks on prod
+  until it is (new RPC the screen calls, new column the page selects).
+- Before a release of `main` to prod, check `schema/README.md`: any migration the released code
+  needs that is not applied on prod is the blocker, and goes first in the hand-off.
+
 ---
 
 ## Three lessons that cost real time
@@ -245,6 +267,8 @@ first.
 
 - Copy the file to **both** locations (repo + Drive) and say so.
 - Update `schema/README.md`'s applied-where table and the prod backlog.
+- Check `scripts/live-0NN.sh` exists on the branch (see "Ship the live script"); the README
+  line should name the exact command Mason runs, staging first, then prod.
 - Update the numbering line in `CLAUDE.md` and `plan-spanneros.md` — next free number, staging
   state, what prod owes and **in what order** (some must follow others; say which, and say when
   one is not optional).
